@@ -1,0 +1,10 @@
+{
+  "CREATE": {
+    "/WorkgroupName": "testworkgroup24",
+    "/NamespaceName": "testnamespace24",
+    "/BaseCapacity": 16,
+    "/ConfigParameters": [],
+    "/SubnetIds": [],
+    "/SecurityGroupIds": []
+  }
+}
