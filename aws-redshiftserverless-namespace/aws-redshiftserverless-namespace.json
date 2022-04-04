@@ -1,40 +1,79 @@
 {
     "typeName": "AWS::RedshiftServerless::Namespace",
-    "description": "An example resource schema demonstrating some basic constructs and validation rules.",
-    "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-rpdk.git",
+    "description": "Definition of AWS::RedshiftServerless::Namespace Resource Type",
+    "sourceUrl": "https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-redshiftserverless",
     "definitions": {
-        "InitechDateFormat": {
-            "$comment": "Use the `definitions` block to provide shared resource property schemas",
-            "type": "string",
-            "format": "date-time"
-        },
-        "Memo": {
+        "Namespace": {
             "type": "object",
             "properties": {
-                "Heading": {
+                "NamespaceArn": {
                     "type": "string"
                 },
-                "Body": {
+                "NamespaceId": {
+                    "type": "string"
+                },
+                "NamespaceName": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 3,
+                    "pattern": "^[a-z0-9]+$"
+                },
+                "AdminUsername": {
+                    "type": "string"
+                },
+                "DbName": {
+                    "type": "string",
+                    "pattern": "[a-zA-Z][a-zA-Z_0-9+.@-]*"
+                },
+                "KmsKeyId": {
+                    "type": "string"
+                },
+                "DefaultIamRoleArn": {
+                    "type": "string"
+                },
+                "IamRoles": {
+                    "type": "array",
+                    "insertionOrder": false,
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "LogExports": {
+                    "type": "array",
+                    "insertionOrder": false,
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "Status": {
+                    "$ref": "#/definitions/NamespaceStatus"
+                },
+                "CreationDate": {
                     "type": "string"
                 }
             },
             "additionalProperties": false
         },
+        "NamespaceStatus": {
+            "type": "string",
+            "enum": [
+                "AVAILABLE",
+                "MODIFYING",
+                "DELETING"
+            ]
+        },
         "Tag": {
-            "description": "A key-value pair to associate with a resource.",
             "type": "object",
             "properties": {
                 "Key": {
                     "type": "string",
-                    "description": "The key name of the tag. You can specify a value that is 1 to 128 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., /, =, +, and -.",
-                    "minLength": 1,
-                    "maxLength": 128
+                    "maxLength": 128,
+                    "minLength": 1
                 },
                 "Value": {
                     "type": "string",
-                    "description": "The value for the tag. You can specify a value that is 0 to 256 Unicode characters in length and cannot be prefixed with aws:. You can use any of the following characters: the set of Unicode letters, digits, whitespace, _, ., /, =, +, and -.",
-                    "minLength": 0,
-                    "maxLength": 256
+                    "maxLength": 256,
+                    "minLength": 0
                 }
             },
             "required": [
@@ -45,93 +84,117 @@
         }
     },
     "properties": {
-        "TPSCode": {
-            "description": "A TPS Code is automatically generated on creation and assigned as the unique identifier.",
+        "AdminUserPassword": {
+            "description": "The password associated with the admin user for the namespace that is being created. Password must be at least 8 characters in length, should be any printable ASCII character. Must contain at least one lowercase letter, one uppercase letter and one decimal digit.",
             "type": "string",
-            "pattern": "^[A-Z]{3,5}[0-9]{8}-[0-9]{4}$"
+            "minLength": 8,
+            "pattern": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[^\\x00-\\x20\\x22\\x27\\x2f\\x40\\x5c\\x7f-\\uffff]+"
         },
-        "Title": {
-            "description": "The title of the TPS report is a mandatory element.",
+        "AdminUsername": {
+            "description": "The user name associated with the admin user for the namespace that is being created. Only alphanumeric characters and underscores are allowed. It should start with an alphabet.",
             "type": "string",
-            "minLength": 20,
-            "maxLength": 250
+            "pattern": "[a-zA-Z][a-zA-Z_0-9+.@-]*"
         },
-        "CoverSheetIncluded": {
-            "description": "Required for all TPS Reports submitted after 2/19/1999",
-            "type": "boolean"
-        },
-        "DueDate": {
-            "$ref": "#/definitions/InitechDateFormat"
-        },
-        "ApprovalDate": {
-            "$ref": "#/definitions/InitechDateFormat"
-        },
-        "Memo": {
-            "$ref": "#/definitions/Memo"
-        },
-        "SecondCopyOfMemo": {
-            "description": "In case you didn't get the first one.",
-            "$ref": "#/definitions/Memo"
-        },
-        "TestCode": {
+        "DbName": {
+            "description": "The database name associated for the namespace that is being created. Only alphanumeric characters and underscores are allowed. It should start with an alphabet.",
             "type": "string",
-            "enum": [
-                "NOT_STARTED",
-                "CANCELLED"
-            ]
+            "pattern": "[a-zA-Z][a-zA-Z_0-9+.@-]*"
         },
-        "Authors": {
+        "DefaultIamRoleArn": {
+            "description": "The default IAM role ARN for the namespace that is being created.",
+            "type": "string"
+        },
+        "IamRoles": {
+            "description": "A list of AWS Identity and Access Management (IAM) roles that can be used by the namespace to access other AWS services. You must supply the IAM roles in their Amazon Resource Name (ARN) format. The Default role limit for each request is 10.",
             "type": "array",
+            "insertionOrder": false,
             "items": {
                 "type": "string"
             }
         },
-        "Tags": {
-            "description": "An array of key-value pairs to apply to this resource.",
+        "KmsKeyId": {
+            "description": "The AWS Key Management Service (KMS) key ID of the encryption key that you want to use to encrypt data in the namespace.",
+            "type": "string"
+        },
+        "LogExports": {
+            "description": "The collection of log types to be exported provided by the customer. Should only be one of the three supported log types: userlog, useractivitylog and connectionlog",
             "type": "array",
-            "uniqueItems": true,
+            "insertionOrder": false,
+            "items": {
+                "type": "string",
+                "pattern": "^(userlog|useractivitylog|connectionlog)$"
+            }
+        },
+        "Namespace": {
+            "$ref": "#/definitions/Namespace"
+        },
+        "NamespaceName": {
+            "description": "A unique identifier for the namespace. You use this identifier to refer to the namespace for any subsequent namespace operations such as deleting or modifying. All alphabetical characters must be lower case. Namespace name should be unique for all namespaces within an AWS account.",
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 3,
+            "pattern": "^[a-z0-9]+$"
+        },
+        "Tags": {
+            "description": "The list of tags for the namespace.",
+            "type": "array",
             "insertionOrder": false,
             "items": {
                 "$ref": "#/definitions/Tag"
-            }
+            },
+            "maxItems": 200,
+            "minItems": 0
         }
     },
-    "additionalProperties": false,
+    "tagging": {
+        "taggable": false
+    },
     "required": [
-        "TestCode",
-        "Title"
+        "NamespaceName"
     ],
     "readOnlyProperties": [
-        "/properties/TPSCode"
+        "/properties/Namespace"
+    ],
+    "writeOnlyProperties": [
+        "/properties/AdminUserPassword",
+        "/properties/Tags"
+    ],
+    "createOnlyProperties": [
+        "/properties/NamespaceName",
+        "/properties/Tags"
     ],
     "primaryIdentifier": [
-        "/properties/TPSCode"
+        "/properties/NamespaceName"
     ],
     "handlers": {
         "create": {
             "permissions": [
-                "initech:CreateReport"
+                "redshift-serverless:CreateNamespace",
+                "redshift-serverless:GetNamespace"
             ]
         },
         "read": {
             "permissions": [
-                "initech:DescribeReport"
+                "redshift-serverless:GetNamespace"
             ]
         },
         "update": {
             "permissions": [
-                "initech:UpdateReport"
+                "redshift-serverless:UpdateNamespace",
+                "redshift-serverless:GetNamespace"
             ]
         },
         "delete": {
             "permissions": [
-                "initech:DeleteReport"
+                "redshift-serverless:DeleteNamespace",
+                "redshift-serverless:GetNamespace"
             ]
         },
         "list": {
             "permissions": [
-                "initech:ListReports"
+                "redshift-serverless:ListNamespaces"
             ]
         }
-    }
+    },
+    "additionalProperties": false
 }
