@@ -1,6 +1,6 @@
 # AWS::RedshiftServerless::Namespace
 
-An example resource schema demonstrating some basic constructs and validation rules.
+Definition of AWS::RedshiftServerless::Namespace Resource Type
 
 ## Syntax
 
@@ -12,14 +12,14 @@ To declare this entity in your AWS CloudFormation template, use the following sy
 {
     "Type" : "AWS::RedshiftServerless::Namespace",
     "Properties" : {
-        "<a href="#title" title="Title">Title</a>" : <i>String</i>,
-        "<a href="#coversheetincluded" title="CoverSheetIncluded">CoverSheetIncluded</a>" : <i>Boolean</i>,
-        "<a href="#duedate" title="DueDate">DueDate</a>" : <i>String</i>,
-        "<a href="#approvaldate" title="ApprovalDate">ApprovalDate</a>" : <i>String</i>,
-        "<a href="#memo" title="Memo">Memo</a>" : <i><a href="memo.md">Memo</a></i>,
-        "<a href="#secondcopyofmemo" title="SecondCopyOfMemo">SecondCopyOfMemo</a>" : <i><a href="memo.md">Memo</a></i>,
-        "<a href="#testcode" title="TestCode">TestCode</a>" : <i>String</i>,
-        "<a href="#authors" title="Authors">Authors</a>" : <i>[ String, ... ]</i>,
+        "<a href="#adminuserpassword" title="AdminUserPassword">AdminUserPassword</a>" : <i>String</i>,
+        "<a href="#adminusername" title="AdminUsername">AdminUsername</a>" : <i>String</i>,
+        "<a href="#dbname" title="DbName">DbName</a>" : <i>String</i>,
+        "<a href="#defaultiamrolearn" title="DefaultIamRoleArn">DefaultIamRoleArn</a>" : <i>String</i>,
+        "<a href="#iamroles" title="IamRoles">IamRoles</a>" : <i>[ String, ... ]</i>,
+        "<a href="#kmskeyid" title="KmsKeyId">KmsKeyId</a>" : <i>String</i>,
+        "<a href="#logexports" title="LogExports">LogExports</a>" : <i>[ String, ... ]</i>,
+        "<a href="#namespacename" title="NamespaceName">NamespaceName</a>" : <i>String</i>,
         "<a href="#tags" title="Tags">Tags</a>" : <i>[ <a href="tag.md">Tag</a>, ... ]</i>
     }
 }
@@ -30,54 +30,63 @@ To declare this entity in your AWS CloudFormation template, use the following sy
 <pre>
 Type: AWS::RedshiftServerless::Namespace
 Properties:
-    <a href="#title" title="Title">Title</a>: <i>String</i>
-    <a href="#coversheetincluded" title="CoverSheetIncluded">CoverSheetIncluded</a>: <i>Boolean</i>
-    <a href="#duedate" title="DueDate">DueDate</a>: <i>String</i>
-    <a href="#approvaldate" title="ApprovalDate">ApprovalDate</a>: <i>String</i>
-    <a href="#memo" title="Memo">Memo</a>: <i><a href="memo.md">Memo</a></i>
-    <a href="#secondcopyofmemo" title="SecondCopyOfMemo">SecondCopyOfMemo</a>: <i><a href="memo.md">Memo</a></i>
-    <a href="#testcode" title="TestCode">TestCode</a>: <i>String</i>
-    <a href="#authors" title="Authors">Authors</a>: <i>
+    <a href="#adminuserpassword" title="AdminUserPassword">AdminUserPassword</a>: <i>String</i>
+    <a href="#adminusername" title="AdminUsername">AdminUsername</a>: <i>String</i>
+    <a href="#dbname" title="DbName">DbName</a>: <i>String</i>
+    <a href="#defaultiamrolearn" title="DefaultIamRoleArn">DefaultIamRoleArn</a>: <i>String</i>
+    <a href="#iamroles" title="IamRoles">IamRoles</a>: <i>
       - String</i>
+    <a href="#kmskeyid" title="KmsKeyId">KmsKeyId</a>: <i>String</i>
+    <a href="#logexports" title="LogExports">LogExports</a>: <i>
+      - String</i>
+    <a href="#namespacename" title="NamespaceName">NamespaceName</a>: <i>String</i>
     <a href="#tags" title="Tags">Tags</a>: <i>
       - <a href="tag.md">Tag</a></i>
 </pre>
 
 ## Properties
 
-#### Title
+#### AdminUserPassword
 
-The title of the TPS report is a mandatory element.
-
-_Required_: Yes
-
-_Type_: String
-
-_Minimum_: <code>20</code>
-
-_Maximum_: <code>250</code>
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### CoverSheetIncluded
-
-Required for all TPS Reports submitted after 2/19/1999
-
-_Required_: No
-
-_Type_: Boolean
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### DueDate
+The password associated with the admin user for the namespace that is being created. Password must be at least 8 characters in length, should be any printable ASCII character. Must contain at least one lowercase letter, one uppercase letter and one decimal digit.
 
 _Required_: No
 
 _Type_: String
 
+_Minimum_: <code>8</code>
+
+_Pattern_: <code>^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[^\x00-\x20\x22\x27\x2f\x40\x5c\x7f-\uffff]+</code>
+
 _Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
 
-#### ApprovalDate
+#### AdminUsername
+
+The user name associated with the admin user for the namespace that is being created. Only alphanumeric characters and underscores are allowed. It should start with an alphabet.
+
+_Required_: No
+
+_Type_: String
+
+_Pattern_: <code>[a-zA-Z][a-zA-Z_0-9+.@-]*</code>
+
+_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
+
+#### DbName
+
+The database name associated for the namespace that is being created. Only alphanumeric characters and underscores are allowed. It should start with an alphabet.
+
+_Required_: No
+
+_Type_: String
+
+_Pattern_: <code>[a-zA-Z][a-zA-Z_0-9+.@-]*</code>
+
+_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
+
+#### DefaultIamRoleArn
+
+The default IAM role ARN for the namespace that is being created.
 
 _Required_: No
 
@@ -85,33 +94,9 @@ _Type_: String
 
 _Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
 
-#### Memo
+#### IamRoles
 
-_Required_: No
-
-_Type_: <a href="memo.md">Memo</a>
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### SecondCopyOfMemo
-
-_Required_: No
-
-_Type_: <a href="memo.md">Memo</a>
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### TestCode
-
-_Required_: Yes
-
-_Type_: String
-
-_Allowed Values_: <code>NOT_STARTED</code> | <code>CANCELLED</code>
-
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
-
-#### Authors
+A list of AWS Identity and Access Management (IAM) roles that can be used by the namespace to access other AWS services. You must supply the IAM roles in their Amazon Resource Name (ARN) format. The Default role limit for each request is 10.
 
 _Required_: No
 
@@ -119,21 +104,57 @@ _Type_: List of String
 
 _Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
 
+#### KmsKeyId
+
+The AWS Key Management Service (KMS) key ID of the encryption key that you want to use to encrypt data in the namespace.
+
+_Required_: No
+
+_Type_: String
+
+_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
+
+#### LogExports
+
+The collection of log types to be exported provided by the customer. Should only be one of the three supported log types: userlog, useractivitylog and connectionlog
+
+_Required_: No
+
+_Type_: List of String
+
+_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
+
+#### NamespaceName
+
+A unique identifier for the namespace. You use this identifier to refer to the namespace for any subsequent namespace operations such as deleting or modifying. All alphabetical characters must be lower case. Namespace name should be unique for all namespaces within an AWS account.
+
+_Required_: Yes
+
+_Type_: String
+
+_Minimum_: <code>3</code>
+
+_Maximum_: <code>64</code>
+
+_Pattern_: <code>^[a-z0-9]+$</code>
+
+_Update requires_: [Replacement](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-replacement)
+
 #### Tags
 
-An array of key-value pairs to apply to this resource.
+The list of tags for the namespace.
 
 _Required_: No
 
 _Type_: List of <a href="tag.md">Tag</a>
 
-_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
+_Update requires_: [Replacement](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-replacement)
 
 ## Return Values
 
 ### Ref
 
-When you pass the logical ID of this resource to the intrinsic `Ref` function, Ref returns the TPSCode.
+When you pass the logical ID of this resource to the intrinsic `Ref` function, Ref returns the NamespaceName.
 
 ### Fn::GetAtt
 
@@ -141,7 +162,6 @@ The `Fn::GetAtt` intrinsic function returns a value for a specified attribute of
 
 For more information about using the `Fn::GetAtt` intrinsic function, see [Fn::GetAtt](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-getatt.html).
 
-#### TPSCode
+#### Namespace
 
-A TPS Code is automatically generated on creation and assigned as the unique identifier.
-
+Returns the <code>Namespace</code> value.
