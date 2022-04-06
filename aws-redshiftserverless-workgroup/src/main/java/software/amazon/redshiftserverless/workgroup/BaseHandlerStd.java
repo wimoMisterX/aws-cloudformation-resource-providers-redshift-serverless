@@ -13,10 +13,19 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 import java.util.List;
 import java.util.Locale;
+import software.amazon.cloudformation.proxy.delay.Constant;
+import java.time.Duration;
 
 // Placeholder for the functionality that could be shared across Create/Read/Update/Delete/List Handlers
 
 public abstract class BaseHandlerStd extends BaseHandler<CallbackContext> {
+
+  protected static final Constant DELETE_BACKOFF_STRATEGY = Constant.of().
+          timeout(Duration.ofMinutes(5L)).delay(Duration.ofSeconds(5L)).build();
+
+  protected static final Constant UPDATE_BACKOFF_STRATEGY = Constant.of().
+          timeout(Duration.ofMinutes(20L)).delay(Duration.ofSeconds(5L)).build();
+
   @Override
   public final ProgressEvent<ResourceModel, CallbackContext> handleRequest(
     final AmazonWebServicesClientProxy proxy,

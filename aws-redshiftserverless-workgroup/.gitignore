@@ -1,6 +1,9 @@
 # macOS
 .DS_Store
 ._*
+*.jar
+.hypothesis
+example_inputs
 
 # Maven outputs
 .classpath
@@ -8,6 +11,7 @@
 # IntelliJ
 *.iml
 .idea
+../.idea/
 out.java
 out/
 .settings

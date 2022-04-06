@@ -1,9 +1,5 @@
 package software.amazon.redshiftserverless.workgroup;
 
-// TODO: replace all usage of SdkClient with your service client type, e.g; YourServiceAsyncClient
-
-
-
 import software.amazon.awssdk.services.redshiftarcadiacoral.RedshiftArcadiaCoralClient;
 import software.amazon.awssdk.services.redshiftarcadiacoral.model.*;
 
@@ -26,13 +22,11 @@ public class DeleteHandler extends BaseHandlerStd {
 
         this.logger = logger;
 
-        // TODO: Adjust Progress Chain according to your implementation
-        // https://github.com/aws-cloudformation/cloudformation-cli-java-plugin/blob/master/src/main/java/software/amazon/cloudformation/proxy/CallChain.java
-
         return ProgressEvent.progress(request.getDesiredResourceState(), callbackContext)
             .then(progress ->
                 proxy.initiate("AWS-RedshiftServerless-Workgroup::Delete", proxyClient, progress.getResourceModel(), progress.getCallbackContext())
                         .translateToServiceRequest(Translator::translateToDeleteRequest)
+                        .backoffDelay(DELETE_BACKOFF_STRATEGY)
                         .makeServiceCall(this::deleteWorkgroup)
                         .stabilize((_request, _response, _client, _model, _context) -> isWorkgroupActiveAfterDelete(_client, _model, _context))
                         .handleError(this::deleteWorkgroupErrorHandler)

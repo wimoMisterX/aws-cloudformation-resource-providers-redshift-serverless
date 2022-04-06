@@ -162,6 +162,12 @@ The `Fn::GetAtt` intrinsic function returns a value for a specified attribute of
 
 For more information about using the `Fn::GetAtt` intrinsic function, see [Fn::GetAtt](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-getatt.html).
 
+<<<<<<< Updated upstream
 #### Namespace
 
 Returns the <code>Namespace</code> value.
+=======
+#### TPSCode
+
+A TPS Code is automatically generated on creation and assigned as the unique identifier.
+>>>>>>> Stashed changes

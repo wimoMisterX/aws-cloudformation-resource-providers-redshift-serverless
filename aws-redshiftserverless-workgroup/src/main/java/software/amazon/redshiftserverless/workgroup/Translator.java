@@ -95,30 +95,14 @@ public class Translator {
     return UpdateWorkgroupRequest.builder()
             .workgroupName(model.getWorkgroupName())
             .baseCapacity(model.getBaseCapacity())
-            .enhancedVpcRouting(model.getEnhancedVpcRouting())
-            .subnetIds(model.getSubnetIds())
-            .securityGroupIds(model.getSecurityGroupIds())
-            .configParameters(convertConfigParametersToRequest(model.getConfigParameters()))
-            .publiclyAccessible(model.getPubliclyAccessible())
+            //.enhancedVpcRouting(model.getEnhancedVpcRouting() == null ? null: model.getEnhancedVpcRouting())
+            //.subnetIds(model.getSubnetIds().isEmpty() ? null: model.getSubnetIds())
+            //.securityGroupIds(model.getSecurityGroupIds().isEmpty() ? null: model.getSecurityGroupIds())
+            //.configParameters(convertConfigParametersToRequest(model.getConfigParameters()).isEmpty() ? null: convertConfigParametersToRequest(model.getConfigParameters()))
+            //.publiclyAccessible(model.getPubliclyAccessible() == null ? null: model.getPubliclyAccessible())
             .build();
   }
 
-  /**
-   * Request to update some other properties that could not be provisioned through first update request
-   * @param model resource model
-   * @return awsRequest the aws service request to modify a resource
-   */
-  static UpdateWorkgroupRequest translateToSecondUpdateRequest(final ResourceModel model) {
-    return UpdateWorkgroupRequest.builder()
-            .workgroupName(model.getWorkgroupName())
-            .baseCapacity(model.getBaseCapacity())
-            .enhancedVpcRouting(model.getEnhancedVpcRouting())
-            .subnetIds(model.getSubnetIds())
-            .securityGroupIds(model.getSecurityGroupIds())
-            .configParameters(convertConfigParametersToRequest(model.getConfigParameters()))
-            .publiclyAccessible(model.getPubliclyAccessible())
-            .build();
-  }
 
   /**
    * Request to list resources
@@ -149,30 +133,6 @@ public class Translator {
     return Optional.ofNullable(collection)
         .map(Collection::stream)
         .orElseGet(Stream::empty);
-  }
-
-  /**
-   * Request to add tags to a resource
-   * @param model resource model
-   * @return awsRequest the aws service request to create a resource
-   */
-  static AwsRequest tagResourceRequest(final ResourceModel model, final Map<String, String> addedTags) {
-    final AwsRequest awsRequest = null;
-    // TODO: construct a request
-    // e.g. https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-logs/blob/2077c92299aeb9a68ae8f4418b5e932b12a8b186/aws-logs-loggroup/src/main/java/com/aws/logs/loggroup/Translator.java#L39-L43
-    return awsRequest;
-  }
-
-  /**
-   * Request to add tags to a resource
-   * @param model resource model
-   * @return awsRequest the aws service request to create a resource
-   */
-  static AwsRequest untagResourceRequest(final ResourceModel model, final Set<String> removedTags) {
-    final AwsRequest awsRequest = null;
-    // TODO: construct a request
-    // e.g. https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-logs/blob/2077c92299aeb9a68ae8f4418b5e932b12a8b186/aws-logs-loggroup/src/main/java/com/aws/logs/loggroup/Translator.java#L39-L43
-    return awsRequest;
   }
 
   private static Collection<software.amazon.awssdk.services.redshiftarcadiacoral.model.ConfigParameter> convertConfigParametersToRequest(List<software.amazon.redshiftserverless.workgroup.ConfigParameter> configParameters) {

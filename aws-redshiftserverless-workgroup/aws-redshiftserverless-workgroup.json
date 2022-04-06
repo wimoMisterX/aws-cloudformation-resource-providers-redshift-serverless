@@ -52,26 +52,6 @@
             },
             "additionalProperties": false
         },
-        "Tag": {
-            "type": "object",
-            "properties": {
-                "Key": {
-                    "type": "string",
-                    "maxLength": 128,
-                    "minLength": 1
-                },
-                "Value": {
-                    "type": "string",
-                    "maxLength": 256,
-                    "minLength": 0
-                }
-            },
-            "required": [
-                "Key",
-                "Value"
-            ],
-            "additionalProperties": false
-        },
         "VpcEndpoint": {
             "type": "object",
             "properties": {
@@ -107,7 +87,8 @@
                     "pattern": "^[a-z0-9]*$"
                 },
                 "NamespaceName": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^[a-z0-9]*$"
                 },
                 "BaseCapacity": {
                     "type": "integer"
@@ -120,7 +101,8 @@
                     "items": {
                         "$ref": "#/definitions/ConfigParameter"
                     },
-                    "insertionOrder": false
+                    "insertionOrder": false,
+                    "pattern": "^[a-z0-9]*$"
                 },
                 "SecurityGroupIds": {
                     "type": "array",
@@ -201,15 +183,6 @@
                 "type": "string"
             },
             "insertionOrder": false
-        },
-        "Tags": {
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/Tag"
-            },
-            "insertionOrder": false,
-            "maxItems": 200,
-            "minItems": 0
         },
         "Workgroup": {
             "$ref": "#/definitions/Workgroup"

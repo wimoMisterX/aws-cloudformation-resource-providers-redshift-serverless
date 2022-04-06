@@ -1,8 +1,5 @@
 package software.amazon.redshiftserverless.workgroup;
 
-// TODO: replace all usage of SdkClient with your service client type, e.g; YourServiceAsyncClient
-// import software.amazon.awssdk.services.yourservice.YourServiceAsyncClient;
-
 import software.amazon.awssdk.awscore.AwsResponse;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.SdkClient;
@@ -28,24 +25,15 @@ public class UpdateHandler extends BaseHandlerStd {
 
         this.logger = logger;
 
-        // TODO: Adjust Progress Chain according to your implementation
-        // https://github.com/aws-cloudformation/cloudformation-cli-java-plugin/blob/master/src/main/java/software/amazon/cloudformation/proxy/CallChain.java
-
         return ProgressEvent.progress(request.getDesiredResourceState(), callbackContext)
             .then(progress ->
                 proxy.initiate("AWS-RedshiftServerless-Workgroup::Update::first", proxyClient, progress.getResourceModel(), progress.getCallbackContext())
                         .translateToServiceRequest(Translator::translateToFirstUpdateRequest)
+                        .backoffDelay(UPDATE_BACKOFF_STRATEGY)
                         .makeServiceCall(this::updateWorkgroup)
                         .stabilize((_request, _response, _client, _model, _context) -> isWorkgroupActive(_client, _model, _context))
                         .handleError(this::updateWorkflowErrorHandler)
                         .progress())
-            .then(progress ->
-                    proxy.initiate("AWS-RedshiftServerless-Workgroup::Update::second", proxyClient, progress.getResourceModel(), progress.getCallbackContext())
-                            .translateToServiceRequest(Translator::translateToSecondUpdateRequest)
-                            .makeServiceCall(this::updateWorkgroup)
-                            .stabilize((_request, _response, _client, _model, _context) -> isWorkgroupActive(_client, _model, _context))
-                            .handleError(this::updateWorkflowErrorHandler)
-                            .progress())
             .then(progress -> new ReadHandler().handleRequest(proxy, request, callbackContext, proxyClient, logger));
     }
 

@@ -1,6 +1,5 @@
 package software.amazon.redshiftserverless.workgroup;
 
-// TODO: replace all usage of SdkClient with your service client type, e.g; YourServiceAsyncClient
 import software.amazon.awssdk.services.redshiftarcadiacoral.RedshiftArcadiaCoralClient;
 import software.amazon.awssdk.awscore.AwsResponse;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
@@ -60,16 +59,15 @@ public class CreateHandler extends BaseHandlerStd {
             return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.InvalidRequest);
         } else if (exception instanceof ResourceNotFoundException ){
             return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.NotFound);
-        } else if (exception instanceof InternalServerException) {
+        } else if (exception instanceof InternalServerException || exception instanceof TooManyTagsException) {
             return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.InternalFailure);
         } else if (exception instanceof ConflictException) {
             return ProgressEvent.defaultFailureHandler(exception,HandlerErrorCode.ResourceConflict);
-        } else if (exception instanceof TooManyTagsException) {
-            return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.HandlerInternalFailure);
+        } else if (exception.getMessage().contains("already exists")) {
+            return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.AlreadyExists);
         } else {
             return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.GeneralServiceException);
         }
     }
 
 }
-
