@@ -53,6 +53,8 @@ public class DeleteHandler extends BaseHandlerStd {
             return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.NotFound);
         } else if (exception instanceof InternalServerException) {
             return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.InternalFailure);
+        } else if (exception instanceof ConflictException) {
+            return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.ResourceConflict);
         } else if (exception instanceof ValidationException) {
             return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.InvalidRequest);
         } else {

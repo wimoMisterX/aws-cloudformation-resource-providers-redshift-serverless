@@ -55,7 +55,7 @@ public class UpdateHandler extends BaseHandlerStd {
             return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.NotFound);
         } else if (exception instanceof ValidationException) {
             return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.InvalidRequest);
-        } else if (exception instanceof InternalServerException) {
+        } else if (exception instanceof InternalServerException || exception instanceof InsufficientCapacityException) {
             return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.InternalFailure);
         } else if (exception instanceof ConflictException) {
             return ProgressEvent.defaultFailureHandler(exception, HandlerErrorCode.ResourceConflict);
