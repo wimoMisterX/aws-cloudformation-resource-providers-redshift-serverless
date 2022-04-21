@@ -95,11 +95,6 @@ public class Translator {
     return UpdateWorkgroupRequest.builder()
             .workgroupName(model.getWorkgroupName())
             .baseCapacity(model.getBaseCapacity())
-            //.enhancedVpcRouting(model.getEnhancedVpcRouting() == null ? null: model.getEnhancedVpcRouting())
-            //.subnetIds(model.getSubnetIds().isEmpty() ? null: model.getSubnetIds())
-            //.securityGroupIds(model.getSecurityGroupIds().isEmpty() ? null: model.getSecurityGroupIds())
-            //.configParameters(convertConfigParametersToRequest(model.getConfigParameters()).isEmpty() ? null: convertConfigParametersToRequest(model.getConfigParameters()))
-            //.publiclyAccessible(model.getPubliclyAccessible() == null ? null: model.getPubliclyAccessible())
             .build();
   }
 

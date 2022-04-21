@@ -7,6 +7,7 @@ import java.net.URI;
 
 public class ClientBuilder {
 
+  //TODO: change the endpoint when it goes to prod
   public static RedshiftArcadiaCoralClient getClient() {
 
     return RedshiftArcadiaCoralClient.builder()
