@@ -30,6 +30,17 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
+                - "iam:PassRole"
+                - "kms:CancelKeyDeletion"
+                - "kms:CreateGrant"
+                - "kms:Decrypt"
+                - "kms:DescribeKey"
+                - "kms:Encrypt"
+                - "kms:ListGrants"
+                - "kms:RevokeGrant"
+                - "kms:ScheduleKeyDeletion"
+                - "kms:TagResource"
+                - "kms:UntagResource"
                 - "redshift-serverless:CreateNamespace"
                 - "redshift-serverless:DeleteNamespace"
                 - "redshift-serverless:GetNamespace"
