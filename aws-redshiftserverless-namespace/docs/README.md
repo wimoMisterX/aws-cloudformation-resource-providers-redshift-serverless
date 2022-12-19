@@ -19,6 +19,7 @@ To declare this entity in your AWS CloudFormation template, use the following sy
         "<a href="#iamroles" title="IamRoles">IamRoles</a>" : <i>[ String, ... ]</i>,
         "<a href="#kmskeyid" title="KmsKeyId">KmsKeyId</a>" : <i>String</i>,
         "<a href="#logexports" title="LogExports">LogExports</a>" : <i>[ String, ... ]</i>,
+        "<a href="#namespace" title="Namespace">Namespace</a>" : <i><a href="namespace.md">Namespace</a></i>,
         "<a href="#namespacename" title="NamespaceName">NamespaceName</a>" : <i>String</i>,
         "<a href="#tags" title="Tags">Tags</a>" : <i>[ <a href="tag.md">Tag</a>, ... ]</i>,
         "<a href="#finalsnapshotname" title="FinalSnapshotName">FinalSnapshotName</a>" : <i>String</i>,
@@ -41,6 +42,7 @@ Properties:
     <a href="#kmskeyid" title="KmsKeyId">KmsKeyId</a>: <i>String</i>
     <a href="#logexports" title="LogExports">LogExports</a>: <i>
       - String</i>
+    <a href="#namespace" title="Namespace">Namespace</a>: <i><a href="namespace.md">Namespace</a></i>
     <a href="#namespacename" title="NamespaceName">NamespaceName</a>: <i>String</i>
     <a href="#tags" title="Tags">Tags</a>: <i>
       - <a href="tag.md">Tag</a></i>
@@ -58,9 +60,9 @@ _Required_: No
 
 _Type_: String
 
-_Minimum_: <code>8</code>
+_Minimum Length_: <code>8</code>
 
-_Maximum_: <code>64</code>
+_Maximum Length_: <code>64</code>
 
 _Pattern_: <code>^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[^\x00-\x20\x22\x27\x2f\x40\x5c\x7f-\uffff]+</code>
 
@@ -86,7 +88,7 @@ _Required_: No
 
 _Type_: String
 
-_Maximum_: <code>127</code>
+_Maximum Length_: <code>127</code>
 
 _Pattern_: <code>[a-zA-Z][a-zA-Z_0-9+.@-]*</code>
 
@@ -132,6 +134,14 @@ _Type_: List of String
 
 _Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
 
+#### Namespace
+
+_Required_: No
+
+_Type_: <a href="namespace.md">Namespace</a>
+
+_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
+
 #### NamespaceName
 
 A unique identifier for the namespace. You use this identifier to refer to the namespace for any subsequent namespace operations such as deleting or modifying. All alphabetical characters must be lower case. Namespace name should be unique for all namespaces within an AWS account.
@@ -140,9 +150,9 @@ _Required_: Yes
 
 _Type_: String
 
-_Minimum_: <code>3</code>
+_Minimum Length_: <code>3</code>
 
-_Maximum_: <code>64</code>
+_Maximum Length_: <code>64</code>
 
 _Pattern_: <code>^[a-z0-9-]+$</code>
 
@@ -166,7 +176,7 @@ _Required_: No
 
 _Type_: String
 
-_Maximum_: <code>255</code>
+_Maximum Length_: <code>255</code>
 
 _Pattern_: <code>[a-z][a-z0-9]*(-[a-z0-9]+)*</code>
 
@@ -194,6 +204,46 @@ The `Fn::GetAtt` intrinsic function returns a value for a specified attribute of
 
 For more information about using the `Fn::GetAtt` intrinsic function, see [Fn::GetAtt](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-getatt.html).
 
-#### Namespace
+#### NamespaceArn
 
-Returns the <code>Namespace</code> value.
+Returns the <code>NamespaceArn</code> value.
+
+#### NamespaceId
+
+Returns the <code>NamespaceId</code> value.
+
+#### NamespaceName
+
+Returns the <code>NamespaceName</code> value.
+
+#### AdminUsername
+
+Returns the <code>AdminUsername</code> value.
+
+#### DbName
+
+Returns the <code>DbName</code> value.
+
+#### KmsKeyId
+
+Returns the <code>KmsKeyId</code> value.
+
+#### DefaultIamRoleArn
+
+Returns the <code>DefaultIamRoleArn</code> value.
+
+#### IamRoles
+
+Returns the <code>IamRoles</code> value.
+
+#### LogExports
+
+Returns the <code>LogExports</code> value.
+
+#### Status
+
+Returns the <code>Status</code> value.
+
+#### CreationDate
+
+Returns the <code>CreationDate</code> value.
