@@ -232,6 +232,9 @@
             "type": "boolean",
             "default": false
         },
+        "Port": {
+            "type": "integer"
+        },
         "Tags": {
             "type": "array",
             "insertionOrder": false,

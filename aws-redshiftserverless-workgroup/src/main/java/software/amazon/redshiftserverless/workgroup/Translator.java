@@ -48,6 +48,7 @@ public class Translator {
                 .subnetIds(model.getSubnetIds())
                 .publiclyAccessible(model.getPubliclyAccessible())
                 .tags(translateToSdkTags(model.getTags()))
+                .port(model.getPort())
                 .build();
     }
 
@@ -79,6 +80,7 @@ public class Translator {
                 .securityGroupIds(awsResponse.workgroup().securityGroupIds())
                 .subnetIds(awsResponse.workgroup().subnetIds())
                 .publiclyAccessible(awsResponse.workgroup().publiclyAccessible())
+                .port(awsResponse.workgroup().endpoint().port())
                 .workgroup(Workgroup.builder()
                         .workgroupId(awsResponse.workgroup().workgroupId())
                         .workgroupArn(awsResponse.workgroup().workgroupArn())
@@ -124,6 +126,7 @@ public class Translator {
                 .publiclyAccessible(model.getPubliclyAccessible())
                 .subnetIds(model.getSubnetIds())
                 .securityGroupIds(model.getSecurityGroupIds())
+                .port(model.getPort())
                 .build();
     }
 
