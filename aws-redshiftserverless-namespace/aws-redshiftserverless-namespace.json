@@ -62,6 +62,12 @@
                 },
                 "CreationDate": {
                     "type": "string"
+                },
+                "AdminPasswordSecretArn": {
+                    "type": "string"
+                },
+                "AdminPasswordSecretKmsKeyId": {
+                    "type": "string"
                 }
             },
             "additionalProperties": false
@@ -96,8 +102,12 @@
         }
     },
     "properties": {
+        "AdminPasswordSecretKmsKeyId": {
+            "description": "The ID of the AWS Key Management Service (KMS) key used to encrypt and store the namespace's admin credentials secret. You can only use this parameter if manageAdminPassword is true.",
+            "type": "string"
+        },
         "AdminUserPassword": {
-            "description": "The password associated with the admin user for the namespace that is being created. Password must be at least 8 characters in length, should be any printable ASCII character. Must contain at least one lowercase letter, one uppercase letter and one decimal digit.",
+            "description": "The password associated with the admin user for the namespace that is being created. Password must be at least 8 characters in length, should be any printable ASCII character. Must contain at least one lowercase letter, one uppercase letter and one decimal digit. You can't use adminUserPassword if manageAdminPassword is true.",
             "type": "string",
             "maxLength": 64,
             "minLength": 8,
@@ -141,6 +151,10 @@
             },
             "maxItems": 16,
             "minItems": 0
+        },
+        "ManageAdminPassword": {
+            "description": "If true, Amazon Redshift uses AWS Secrets Manager to manage the namespace's admin credentials. You can't use adminUserPassword if manageAdminPassword is true. If manageAdminPassword is false or not set, Amazon Redshift uses adminUserPassword for the admin user account's password.",
+            "type": "boolean"
         },
         "Namespace": {
             "$ref": "#/definitions/Namespace"
@@ -195,7 +209,9 @@
         "/properties/Namespace/IamRoles",
         "/properties/Namespace/LogExports",
         "/properties/Namespace/Status",
-        "/properties/Namespace/CreationDate"
+        "/properties/Namespace/CreationDate",
+        "/properties/Namespace/AdminPasswordSecretArn",
+        "/properties/Namespace/AdminPasswordSecretKmsKeyId"
     ],
     "writeOnlyProperties": [
         "/properties/AdminUserPassword",
@@ -203,7 +219,8 @@
         "/properties/FinalSnapshotRetentionPeriod",
         "/properties/Tags",
         "/properties/Tags/*/Key",
-        "/properties/Tags/*/Value"
+        "/properties/Tags/*/Value",
+        "/properties/ManageAdminPassword"
     ],
     "createOnlyProperties": [
         "/properties/NamespaceName",

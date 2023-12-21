@@ -12,6 +12,7 @@ To declare this entity in your AWS CloudFormation template, use the following sy
 {
     "Type" : "AWS::RedshiftServerless::Namespace",
     "Properties" : {
+        "<a href="#adminpasswordsecretkmskeyid" title="AdminPasswordSecretKmsKeyId">AdminPasswordSecretKmsKeyId</a>" : <i>String</i>,
         "<a href="#adminuserpassword" title="AdminUserPassword">AdminUserPassword</a>" : <i>String</i>,
         "<a href="#adminusername" title="AdminUsername">AdminUsername</a>" : <i>String</i>,
         "<a href="#dbname" title="DbName">DbName</a>" : <i>String</i>,
@@ -19,6 +20,7 @@ To declare this entity in your AWS CloudFormation template, use the following sy
         "<a href="#iamroles" title="IamRoles">IamRoles</a>" : <i>[ String, ... ]</i>,
         "<a href="#kmskeyid" title="KmsKeyId">KmsKeyId</a>" : <i>String</i>,
         "<a href="#logexports" title="LogExports">LogExports</a>" : <i>[ String, ... ]</i>,
+        "<a href="#manageadminpassword" title="ManageAdminPassword">ManageAdminPassword</a>" : <i>Boolean</i>,
         "<a href="#namespacename" title="NamespaceName">NamespaceName</a>" : <i>String</i>,
         "<a href="#tags" title="Tags">Tags</a>" : <i>[ <a href="tag.md">Tag</a>, ... ]</i>,
         "<a href="#finalsnapshotname" title="FinalSnapshotName">FinalSnapshotName</a>" : <i>String</i>,
@@ -33,6 +35,7 @@ To declare this entity in your AWS CloudFormation template, use the following sy
 <pre>
 Type: AWS::RedshiftServerless::Namespace
 Properties:
+    <a href="#adminpasswordsecretkmskeyid" title="AdminPasswordSecretKmsKeyId">AdminPasswordSecretKmsKeyId</a>: <i>String</i>
     <a href="#adminuserpassword" title="AdminUserPassword">AdminUserPassword</a>: <i>String</i>
     <a href="#adminusername" title="AdminUsername">AdminUsername</a>: <i>String</i>
     <a href="#dbname" title="DbName">DbName</a>: <i>String</i>
@@ -42,6 +45,7 @@ Properties:
     <a href="#kmskeyid" title="KmsKeyId">KmsKeyId</a>: <i>String</i>
     <a href="#logexports" title="LogExports">LogExports</a>: <i>
       - String</i>
+    <a href="#manageadminpassword" title="ManageAdminPassword">ManageAdminPassword</a>: <i>Boolean</i>
     <a href="#namespacename" title="NamespaceName">NamespaceName</a>: <i>String</i>
     <a href="#tags" title="Tags">Tags</a>: <i>
       - <a href="tag.md">Tag</a></i>
@@ -52,9 +56,19 @@ Properties:
 
 ## Properties
 
+#### AdminPasswordSecretKmsKeyId
+
+The ID of the AWS Key Management Service (KMS) key used to encrypt and store the namespace's admin credentials secret. You can only use this parameter if manageAdminPassword is true.
+
+_Required_: No
+
+_Type_: String
+
+_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
+
 #### AdminUserPassword
 
-The password associated with the admin user for the namespace that is being created. Password must be at least 8 characters in length, should be any printable ASCII character. Must contain at least one lowercase letter, one uppercase letter and one decimal digit.
+The password associated with the admin user for the namespace that is being created. Password must be at least 8 characters in length, should be any printable ASCII character. Must contain at least one lowercase letter, one uppercase letter and one decimal digit. You can't use adminUserPassword if manageAdminPassword is true.
 
 _Required_: No
 
@@ -131,6 +145,16 @@ The collection of log types to be exported provided by the customer. Should only
 _Required_: No
 
 _Type_: List of String
+
+_Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
+
+#### ManageAdminPassword
+
+If true, Amazon Redshift uses AWS Secrets Manager to manage the namespace's admin credentials. You can't use adminUserPassword if manageAdminPassword is true. If manageAdminPassword is false or not set, Amazon Redshift uses adminUserPassword for the admin user account's password.
+
+_Required_: No
+
+_Type_: Boolean
 
 _Update requires_: [No interruption](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks-update-behaviors.html#update-no-interrupt)
 
@@ -253,3 +277,11 @@ Returns the <code>Status</code> value.
 #### CreationDate
 
 Returns the <code>CreationDate</code> value.
+
+#### AdminPasswordSecretArn
+
+Returns the <code>AdminPasswordSecretArn</code> value.
+
+#### AdminPasswordSecretKmsKeyId
+
+Returns the <code>AdminPasswordSecretKmsKeyId</code> value.

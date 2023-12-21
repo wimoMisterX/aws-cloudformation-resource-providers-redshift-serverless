@@ -6,7 +6,6 @@ import software.amazon.awssdk.services.redshift.RedshiftClient;
 import software.amazon.awssdk.services.redshift.model.*;
 import software.amazon.awssdk.services.redshiftserverless.RedshiftServerlessClient;
 import software.amazon.awssdk.services.redshiftserverless.model.GetNamespaceRequest;
-import software.amazon.awssdk.services.redshiftserverless.model.Namespace;
 import software.amazon.awssdk.services.redshiftserverless.model.UpdateNamespaceRequest;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.OperationStatus;
@@ -169,5 +168,113 @@ public class UpdateHandlerTest extends AbstractTestBase {
         assertThat(response.getResourceModels()).isNull();
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
+    }
+
+    @Test
+    public void testUpdate_OptInManagedAdminPassword() {
+        final UpdateHandler handler = new UpdateHandler();
+
+        ResourceModel requestResourceModel = getUpdateRequestResourceModelWithManagedAdminPassword();
+        ResourceModel responseResourceModel = getUpdateResponseResourceModelWithManagedAdminPassword();
+        ResourceModel prevModel = ResourceModel.builder()
+                .namespaceName(NAMESPACE_NAME)
+                .build();
+
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+            .previousResourceState(prevModel)
+            .desiredResourceState(requestResourceModel)
+            .build();
+
+        when(proxyClient.client().updateNamespace(any(UpdateNamespaceRequest.class))).thenReturn(getUpdateResponseSdkForManagedAdminPasswords());
+        when(proxyClient.client().getNamespace(any(GetNamespaceRequest.class))).thenReturn(getNamespaceResponseSdkForManagedAdminPasswords());
+        when(redshiftProxyClient.client().getResourcePolicy(any(GetResourcePolicyRequest.class))).thenReturn(getEmptyResourcePolicyResponseSdk());
+
+        ProgressEvent<ResourceModel, CallbackContext> response = handler.handleRequest(proxy, request, new CallbackContext(), proxyClient, redshiftProxyClient, logger);
+        verify(proxyClient.client()).updateNamespace(any(UpdateNamespaceRequest.class));
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+        assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
+        assertThat(response.getResourceModel()).isEqualTo(responseResourceModel);
+        assertThat(response.getResourceModels()).isNull();
+        assertThat(response.getMessage()).isNull();
+        assertThat(response.getErrorCode()).isNull();
+        assertThat(response.getResourceModel().getManageAdminPassword()).isTrue();
+        assertThat(response.getResourceModel().getNamespace().getAdminPasswordSecretArn()).isEqualTo(SECRET_ARN);
+        assertThat(response.getResourceModel().getAdminPasswordSecretKmsKeyId()).isEqualTo(SECRET_KMS_KEY_ID);
+        assertThat(response.getResourceModel().getAdminUserPassword()).isNull();
+    }
+
+    @Test
+    public void testUpdate_OptOutManagedAdminPassword() {
+        final UpdateHandler handler = new UpdateHandler();
+
+        ResourceModel requestResourceModel = getUpdateRequestResourceModel();
+        ResourceModel responseResourceModel = getUpdateResponseResourceModel();
+        ResourceModel prevModel = ResourceModel.builder()
+                .namespaceName(NAMESPACE_NAME)
+                .manageAdminPassword(true)
+                .adminPasswordSecretKmsKeyId(SECRET_KMS_KEY_ID)
+                .build();
+
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+            .previousResourceState(prevModel)
+            .desiredResourceState(requestResourceModel)
+            .build();
+
+        when(proxyClient.client().updateNamespace(any(UpdateNamespaceRequest.class))).thenReturn(getUpdateResponseSdk());
+        when(proxyClient.client().getNamespace(any(GetNamespaceRequest.class))).thenReturn(getNamespaceResponseSdk());
+        when(redshiftProxyClient.client().getResourcePolicy(any(GetResourcePolicyRequest.class))).thenReturn(getEmptyResourcePolicyResponseSdk());
+
+        ProgressEvent<ResourceModel, CallbackContext> response = handler.handleRequest(proxy, request, new CallbackContext(), proxyClient, redshiftProxyClient, logger);
+        verify(proxyClient.client()).updateNamespace(any(UpdateNamespaceRequest.class));
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+        assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
+        assertThat(response.getResourceModel()).isEqualTo(responseResourceModel);
+        assertThat(response.getResourceModels()).isNull();
+        assertThat(response.getMessage()).isNull();
+        assertThat(response.getErrorCode()).isNull();
+        assertThat(response.getResourceModel().getManageAdminPassword()).isNull();
+        assertThat(response.getResourceModel().getNamespace().getAdminPasswordSecretArn()).isNull();
+        assertThat(response.getResourceModel().getAdminPasswordSecretKmsKeyId()).isNull();
+    }
+
+    @Test
+    public void testUpdate_UpdateAdminPasswordSecretKmsKeyId() {
+        final UpdateHandler handler = new UpdateHandler();
+
+        ResourceModel requestResourceModel = getUpdateRequestResourceModelWithManagedAdminPassword();
+
+        ResourceModel responseResourceModel = getUpdateResponseResourceModelWithManagedAdminPassword();
+
+        String oldSecretKmsKeyId = "old" + SECRET_KMS_KEY_ID;
+        ResourceModel prevModel = ResourceModel.builder()
+                .namespaceName(NAMESPACE_NAME)
+                .manageAdminPassword(true)
+                .adminPasswordSecretKmsKeyId(oldSecretKmsKeyId)
+                .build();
+
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+            .previousResourceState(prevModel)
+            .desiredResourceState(requestResourceModel)
+            .build();
+
+        when(proxyClient.client().updateNamespace(any(UpdateNamespaceRequest.class))).thenReturn(getUpdateResponseSdkForManagedAdminPasswords());
+        when(proxyClient.client().getNamespace(any(GetNamespaceRequest.class))).thenReturn(getNamespaceResponseSdkForManagedAdminPasswords());
+        when(redshiftProxyClient.client().getResourcePolicy(any(GetResourcePolicyRequest.class))).thenReturn(getEmptyResourcePolicyResponseSdk());
+
+        ProgressEvent<ResourceModel, CallbackContext> response = handler.handleRequest(proxy, request, new CallbackContext(), proxyClient, redshiftProxyClient, logger);
+        verify(proxyClient.client()).updateNamespace(any(UpdateNamespaceRequest.class));
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+        assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
+        assertThat(response.getResourceModel()).isEqualTo(responseResourceModel);
+        assertThat(response.getResourceModels()).isNull();
+        assertThat(response.getMessage()).isNull();
+        assertThat(response.getErrorCode()).isNull();
+        assertThat(response.getResourceModel().getManageAdminPassword()).isTrue();
+        assertThat(response.getResourceModel().getNamespace().getAdminPasswordSecretArn()).isEqualTo(SECRET_ARN);
+        assertThat(response.getResourceModel().getAdminPasswordSecretKmsKeyId()).isEqualTo(SECRET_KMS_KEY_ID);
+        assertThat(response.getResourceModel().getAdminUserPassword()).isNull();
     }
 }

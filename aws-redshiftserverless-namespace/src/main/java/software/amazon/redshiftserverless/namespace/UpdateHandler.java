@@ -1,16 +1,13 @@
 package software.amazon.redshiftserverless.namespace;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.cloudwatch.model.InvalidParameterValueException;
 import software.amazon.awssdk.services.redshift.RedshiftClient;
 import software.amazon.awssdk.services.redshift.model.*;
-import software.amazon.awssdk.services.redshift.model.PutResourcePolicyRequest;
-import software.amazon.awssdk.services.redshift.model.PutResourcePolicyResponse;
 import software.amazon.awssdk.services.redshift.model.UnsupportedOperationException;
-import software.amazon.awssdk.services.redshift.model.DeleteResourcePolicyRequest;
-import software.amazon.awssdk.services.redshift.model.DeleteResourcePolicyResponse;
 import software.amazon.awssdk.services.redshiftserverless.RedshiftServerlessClient;
 import software.amazon.awssdk.services.redshiftserverless.model.GetNamespaceRequest;
 import software.amazon.awssdk.services.redshiftserverless.model.GetNamespaceResponse;
@@ -54,6 +51,8 @@ public class UpdateHandler extends BaseHandlerStd {
                 .defaultIamRoleArn(StringUtils.equals(prevModel.getDefaultIamRoleArn(), currentModel.getDefaultIamRoleArn()) ? null : currentModel.getDefaultIamRoleArn())
                 .iamRoles(compareListParamsEqualOrNot(prevModel.getIamRoles(), currentModel.getIamRoles()) ? null : currentModel.getIamRoles())
                 .logExports(compareListParamsEqualOrNot(prevModel.getLogExports(), currentModel.getLogExports()) ? null : currentModel.getLogExports())
+                .manageAdminPassword((prevModel.getManageAdminPassword() == currentModel.getManageAdminPassword()) ? null : currentModel.getManageAdminPassword())
+                .adminPasswordSecretKmsKeyId(StringUtils.equals(prevModel.getAdminPasswordSecretKmsKeyId(), currentModel.getAdminPasswordSecretKmsKeyId()) ? null : currentModel.getAdminPasswordSecretKmsKeyId())
                 .build();
 
         // To update the adminUserPassword or adminUserName, we need to specify both username and password in update request
@@ -69,6 +68,14 @@ public class UpdateHandler extends BaseHandlerStd {
             tempUpdateRequestModel = tempUpdateRequestModel.toBuilder()
                     .defaultIamRoleArn(currentModel.getDefaultIamRoleArn())
                     .iamRoles(currentModel.getIamRoles())
+                    .build();
+        }
+
+        // To update the adminPasswordSecretKmsKeyId, we need to specify both manageAdminPassword and adminPasswordSecretKmsKeyId in update request
+        if (!StringUtils.equals(prevModel.getAdminPasswordSecretKmsKeyId(), currentModel.getAdminPasswordSecretKmsKeyId())) {
+            tempUpdateRequestModel = tempUpdateRequestModel.toBuilder()
+                    .manageAdminPassword(currentModel.getManageAdminPassword())
+                    .adminPasswordSecretKmsKeyId(currentModel.getAdminPasswordSecretKmsKeyId())
                     .build();
         }
 

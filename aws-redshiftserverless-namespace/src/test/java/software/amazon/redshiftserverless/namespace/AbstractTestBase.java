@@ -43,6 +43,7 @@ public class AbstractTestBase {
   private static final String STATUS;
   private static final Instant CREATION_DATE;
   private static final software.amazon.awssdk.services.redshiftserverless.model.Namespace NAMESPACE;
+  private static final software.amazon.awssdk.services.redshiftserverless.model.Namespace NAMESPACE_WITH_MANAGED_ADMIN_PASSWORD;
   private static final String FINAL_SNAPSHOT_NAME;
   private static final int FINAL_SNAPSHOT_RETENTION_PERIOD;
   protected static final String AWS_REGION = "us-east-1";
@@ -50,6 +51,8 @@ public class AbstractTestBase {
   protected static final String NAMESPACE_RESOURCE_POLICY_DOCUMENT_EMPTY;
   protected static final ResourcePolicy NAMESPACE_RESOURCE_POLICY;
   protected static final ResourcePolicy NAMESPACE_RESOURCE_POLICY_EMPTY;
+  protected static final String SECRET_ARN;
+  protected static final String SECRET_KMS_KEY_ID;
 
   static {
     MOCK_CREDENTIALS = new Credentials("accessKey", "secretKey", "token");
@@ -71,6 +74,8 @@ public class AbstractTestBase {
     FINAL_SNAPSHOT_RETENTION_PERIOD = 1;
     NAMESPACE_RESOURCE_POLICY_DOCUMENT = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Resource\": \"*\",\"Action\":\"test:test\"}]}";
     NAMESPACE_RESOURCE_POLICY_DOCUMENT_EMPTY = "{}";
+    SECRET_ARN = "DummyClusterSecretArn";
+    SECRET_KMS_KEY_ID = "DummySecretKmsKeyId";
 
     NAMESPACE = software.amazon.awssdk.services.redshiftserverless.model.Namespace.builder()
             .namespaceName(NAMESPACE_NAME)
@@ -85,6 +90,11 @@ public class AbstractTestBase {
             .status(STATUS)
             .creationDate(CREATION_DATE)
             .build();
+
+    NAMESPACE_WITH_MANAGED_ADMIN_PASSWORD = NAMESPACE.toBuilder()
+                                        .adminPasswordSecretArn(SECRET_ARN)
+                                        .adminPasswordSecretKmsKeyId(SECRET_KMS_KEY_ID)
+                                        .build();
 
     NAMESPACE_RESOURCE_POLICY = ResourcePolicy.builder()
             .resourceArn(NAMESPACE.namespaceArn())
@@ -153,7 +163,15 @@ public class AbstractTestBase {
               .build();
   }
 
-  public static ResourceModel getCreateResponseResourceMode() {
+  public static ResourceModel getCreateRequestResourceModelWithManagedAdminPassword() {
+      return getCreateRequestResourceModel().toBuilder()
+              .adminUserPassword(null)
+              .manageAdminPassword(true)
+              .adminPasswordSecretKmsKeyId(SECRET_KMS_KEY_ID)
+              .build();
+  }
+
+  public static ResourceModel getCreateResponseResourceModel() {
     return ResourceModel.builder()
             .adminUsername(ADMIN_USERNAME)
             .dbName(DB_NAME)
@@ -165,6 +183,15 @@ public class AbstractTestBase {
             .namespace(translateToModelNamespace(NAMESPACE))
             .build();
   }
+
+  public static ResourceModel getCreateResponseResourceModelWithManagedAdminPassword() {
+    return getCreateResponseResourceModel().toBuilder()
+            .adminPasswordSecretKmsKeyId(SECRET_KMS_KEY_ID)
+            .manageAdminPassword(true)
+            .namespace(translateToModelNamespace(NAMESPACE_WITH_MANAGED_ADMIN_PASSWORD))
+            .build();
+  }
+
 
   private static Namespace translateToModelNamespace(
           software.amazon.awssdk.services.redshiftserverless.model.Namespace namespace) {
@@ -180,6 +207,8 @@ public class AbstractTestBase {
             .logExports(namespace.logExportsAsStrings())
             .status(namespace.statusAsString())
             .creationDate(namespace.creationDate().toString())
+            .adminPasswordSecretArn(namespace.adminPasswordSecretArn())
+            .adminPasswordSecretKmsKeyId(namespace.adminPasswordSecretKmsKeyId())
             .build();
   }
 
@@ -189,9 +218,21 @@ public class AbstractTestBase {
             .build();
   }
 
+  public static CreateNamespaceResponse getCreateResponseSdkForManagedAdminPasswords() {
+    return CreateNamespaceResponse.builder()
+            .namespace(NAMESPACE_WITH_MANAGED_ADMIN_PASSWORD)
+            .build();
+  }
+
   public static GetNamespaceResponse getNamespaceResponseSdk() {
     return GetNamespaceResponse.builder()
             .namespace(NAMESPACE)
+            .build();
+  }
+
+  public static GetNamespaceResponse getNamespaceResponseSdkForManagedAdminPasswords() {
+    return GetNamespaceResponse.builder()
+            .namespace(NAMESPACE_WITH_MANAGED_ADMIN_PASSWORD)
             .build();
   }
 
@@ -255,13 +296,31 @@ public class AbstractTestBase {
             .build();
   }
 
+  public static ResourceModel getUpdateRequestResourceModelWithManagedAdminPassword() {
+    return  getUpdateRequestResourceModel().toBuilder()
+            .adminUserPassword(null)
+            .manageAdminPassword(true)
+            .adminPasswordSecretKmsKeyId(SECRET_KMS_KEY_ID)
+            .build();
+  }
+
   public static ResourceModel getUpdateResponseResourceModel() {
-    return getCreateResponseResourceMode();
+    return getCreateResponseResourceModel();
+  }
+
+  public static ResourceModel getUpdateResponseResourceModelWithManagedAdminPassword() {
+    return getCreateResponseResourceModelWithManagedAdminPassword();
   }
 
   public static UpdateNamespaceResponse getUpdateResponseSdk() {
     return UpdateNamespaceResponse.builder()
             .namespace(NAMESPACE)
+            .build();
+  }
+
+  public static UpdateNamespaceResponse getUpdateResponseSdkForManagedAdminPasswords() {
+    return UpdateNamespaceResponse.builder()
+            .namespace(NAMESPACE_WITH_MANAGED_ADMIN_PASSWORD)
             .build();
   }
 

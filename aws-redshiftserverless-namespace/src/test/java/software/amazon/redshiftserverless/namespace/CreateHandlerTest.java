@@ -3,8 +3,6 @@ package software.amazon.redshiftserverless.namespace;
 import java.time.Duration;
 
 import software.amazon.awssdk.services.redshift.RedshiftClient;
-import software.amazon.awssdk.services.redshift.model.CreateClusterRequest;
-import software.amazon.awssdk.services.redshift.model.DescribeClustersRequest;
 import software.amazon.awssdk.services.redshift.model.GetResourcePolicyRequest;
 import software.amazon.awssdk.services.redshift.model.PutResourcePolicyRequest;
 import software.amazon.awssdk.services.redshiftserverless.RedshiftServerlessClient;
@@ -65,7 +63,7 @@ public class CreateHandlerTest extends AbstractTestBase {
         final CreateHandler handler = new CreateHandler();
 
         final ResourceModel requestResourceModel = getCreateRequestResourceModel();
-        final ResourceModel responseResourceModel = getCreateResponseResourceMode();
+        final ResourceModel responseResourceModel = getCreateResponseResourceModel();
 
         final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
             .desiredResourceState(requestResourceModel)
@@ -90,7 +88,7 @@ public class CreateHandlerTest extends AbstractTestBase {
         final CreateHandler handler = new CreateHandler();
 
         final ResourceModel requestResourceModel = getCreateRequestResourceModel();
-        final ResourceModel responseResourceModel = getCreateResponseResourceMode();
+        final ResourceModel responseResourceModel = getCreateResponseResourceModel();
 
         requestResourceModel.setNamespaceResourcePolicy(Translator.convertStringToJson(NAMESPACE_RESOURCE_POLICY_DOCUMENT, logger));
         responseResourceModel.setNamespaceResourcePolicy(Translator.convertStringToJson(NAMESPACE_RESOURCE_POLICY_DOCUMENT, logger));
@@ -112,5 +110,35 @@ public class CreateHandlerTest extends AbstractTestBase {
         assertThat(response.getResourceModels()).isNull();
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
+    }
+
+    @Test
+    public void testCreateNamespace_ManagedAdminPassword() {
+        final CreateHandler handler = new CreateHandler();
+
+        final ResourceModel requestResourceModel = getCreateRequestResourceModelWithManagedAdminPassword();
+
+        final ResourceModel responseResourceModel = getCreateResponseResourceModelWithManagedAdminPassword();
+
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+            .desiredResourceState(requestResourceModel)
+            .build();
+        when(proxyClient.client().createNamespace(any(CreateNamespaceRequest.class))).thenReturn(getCreateResponseSdkForManagedAdminPasswords());
+        when(proxyClient.client().getNamespace(any(GetNamespaceRequest.class))).thenReturn(getNamespaceResponseSdkForManagedAdminPasswords());
+        when(redshiftProxyClient.client().getResourcePolicy(any(GetResourcePolicyRequest.class))).thenReturn(getEmptyResourcePolicyResponseSdk());
+
+        final ProgressEvent<ResourceModel, CallbackContext> response = handler.handleRequest(proxy, request, new CallbackContext(), proxyClient, redshiftProxyClient, logger);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+        assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
+        assertThat(response.getResourceModel()).isEqualTo(responseResourceModel);
+        assertThat(response.getResourceModels()).isNull();
+        assertThat(response.getMessage()).isNull();
+        assertThat(response.getErrorCode()).isNull();
+        assertThat(response.getResourceModel().getManageAdminPassword()).isTrue();
+        assertThat(response.getResourceModel().getNamespace().getAdminPasswordSecretArn()).isEqualTo(SECRET_ARN);
+        assertThat(response.getResourceModel().getAdminPasswordSecretKmsKeyId()).isEqualTo(SECRET_KMS_KEY_ID);
+        assertThat(response.getResourceModel().getAdminUserPassword()).isNull();
     }
 }

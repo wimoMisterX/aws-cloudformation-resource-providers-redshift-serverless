@@ -1,5 +1,6 @@
 package software.amazon.redshiftserverless.namespace;
 
+import com.amazonaws.util.StringUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,7 +8,6 @@ import software.amazon.awssdk.awscore.AwsRequest;
 import software.amazon.awssdk.services.redshift.model.DeleteResourcePolicyRequest;
 import software.amazon.awssdk.services.redshift.model.GetResourcePolicyRequest;
 import software.amazon.awssdk.services.redshift.model.PutResourcePolicyRequest;
-import software.amazon.awssdk.services.redshift.model.GetResourcePolicyResponse;
 import software.amazon.awssdk.services.redshiftserverless.model.CreateNamespaceRequest;
 import software.amazon.awssdk.services.redshiftserverless.model.DeleteNamespaceRequest;
 import software.amazon.awssdk.services.redshiftserverless.model.GetNamespaceRequest;
@@ -49,6 +49,8 @@ public class Translator {
             .iamRoles(model.getIamRoles())
             .logExportsWithStrings(model.getLogExports())
             .tags(translateTagsToSdk(model.getTags()))
+            .manageAdminPassword(model.getManageAdminPassword())
+            .adminPasswordSecretKmsKeyId(model.getAdminPasswordSecretKmsKeyId())
             .build();
   }
 
@@ -88,6 +90,8 @@ public class Translator {
             .logExports(awsResponse.namespace().logExportsAsStrings())
             .namespaceName(awsResponse.namespace().namespaceName())
             .namespace(translateToModelNamespace(awsResponse.namespace()))
+            .manageAdminPassword(StringUtils.isNullOrEmpty(awsResponse.namespace().adminPasswordSecretArn()) ? null : true)
+            .adminPasswordSecretKmsKeyId(awsResponse.namespace().adminPasswordSecretKmsKeyId())
             .build();
   }
 
@@ -121,6 +125,8 @@ public class Translator {
             //TODO: we only support updating db-name after GA
 //            .dbName(model.getDbName())
             .defaultIamRoleArn(model.getDefaultIamRoleArn())
+            .manageAdminPassword(model.getManageAdminPassword())
+            .adminPasswordSecretKmsKeyId(model.getAdminPasswordSecretKmsKeyId())
             .build();
   }
 
@@ -194,6 +200,8 @@ public class Translator {
             .logExports(namespace.logExportsAsStrings())
             .status(namespace.statusAsString())
             .creationDate(namespace.creationDate() == null ? null : namespace.creationDate().toString())
+            .adminPasswordSecretArn(namespace.adminPasswordSecretArn())
+            .adminPasswordSecretKmsKeyId(namespace.adminPasswordSecretKmsKeyId())
             .build();
   }
 
