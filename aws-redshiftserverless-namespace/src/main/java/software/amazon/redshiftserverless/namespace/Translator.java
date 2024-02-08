@@ -14,7 +14,11 @@ import software.amazon.awssdk.services.redshiftserverless.model.GetNamespaceRequ
 import software.amazon.awssdk.services.redshiftserverless.model.GetNamespaceResponse;
 import software.amazon.awssdk.services.redshiftserverless.model.ListNamespacesRequest;
 import software.amazon.awssdk.services.redshiftserverless.model.ListNamespacesResponse;
+import software.amazon.awssdk.services.redshiftserverless.model.ListSnapshotCopyConfigurationsRequest;
 import software.amazon.awssdk.services.redshiftserverless.model.UpdateNamespaceRequest;
+import software.amazon.awssdk.services.redshiftserverless.model.CreateSnapshotCopyConfigurationRequest;
+import software.amazon.awssdk.services.redshiftserverless.model.UpdateSnapshotCopyConfigurationRequest;
+import software.amazon.awssdk.services.redshiftserverless.model.DeleteSnapshotCopyConfigurationRequest;
 import software.amazon.cloudformation.proxy.Logger;
 
 import java.io.IOException;
@@ -85,6 +89,54 @@ public class Translator {
               return null;
             }).filter (iamRole->iamRole!=null)
             .collect(Collectors.toList());
+  }
+
+  /**
+   * Request to enable Cross-region cluster Snapshot
+   * @param model resource model
+   * @return awsRequest the aws service request to modify a resource
+   */
+  static ListSnapshotCopyConfigurationsRequest translateToListSnapshotCopyConfigurationsRequest(final ResourceModel model) {
+    return ListSnapshotCopyConfigurationsRequest.builder()
+            .namespaceName(model.getNamespaceName())
+            .build();
+  }
+
+  /**
+   * Request to enable Cross-region cluster Snapshot
+   * @param model resource model
+   * @return awsRequest the aws service request to modify a resource
+   */
+  static CreateSnapshotCopyConfigurationRequest translateToCreateSnapshotCopyConfigurationRequest(final ResourceModel model, final SnapshotCopyConfiguration snapshotCopyConfiguration) {
+    return CreateSnapshotCopyConfigurationRequest.builder()
+            .namespaceName(model.getNamespaceName())
+            .destinationRegion(snapshotCopyConfiguration.getDestinationRegion())
+            .destinationKmsKeyId(snapshotCopyConfiguration.getDestinationKmsKeyId())
+            .snapshotRetentionPeriod(snapshotCopyConfiguration.getSnapshotRetentionPeriod())
+            .build();
+  }
+
+  /**
+   * Request to Disable Cluster Snapshot
+   * @param model resource model
+   * @return awsRequest the aws service request to modify a resource
+   */
+  static UpdateSnapshotCopyConfigurationRequest translateToUpdateSnapshotCopyConfigurationRequest(final ResourceModel model, final String snapshotCopyConfigurationId, final SnapshotCopyConfiguration snapshotCopyConfiguration) {
+    return UpdateSnapshotCopyConfigurationRequest.builder()
+            .snapshotCopyConfigurationId(snapshotCopyConfigurationId)
+            .snapshotRetentionPeriod(snapshotCopyConfiguration.getSnapshotRetentionPeriod())
+            .build();
+  }
+
+  /**
+   * Request to Disable Cluster Snapshot
+   * @param model resource model
+   * @return awsRequest the aws service request to modify a resource
+   */
+  static DeleteSnapshotCopyConfigurationRequest translateToDeleteSnapshotCopyConfigurationRequest(final ResourceModel model, final String snapshotCopyConfigurationId) {
+    return DeleteSnapshotCopyConfigurationRequest.builder()
+            .snapshotCopyConfigurationId(snapshotCopyConfigurationId)
+            .build();
   }
 
   /**
