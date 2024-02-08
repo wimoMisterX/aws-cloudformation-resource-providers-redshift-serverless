@@ -5,6 +5,8 @@ import software.amazon.awssdk.services.redshiftserverless.model.ConflictExceptio
 import software.amazon.awssdk.services.redshiftserverless.model.GetNamespaceRequest;
 import software.amazon.awssdk.services.redshiftserverless.model.GetNamespaceResponse;
 import software.amazon.awssdk.services.redshiftserverless.model.InternalServerException;
+import software.amazon.awssdk.services.redshiftserverless.model.ListSnapshotCopyConfigurationsResponse;
+import software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration;
 import software.amazon.awssdk.services.redshiftserverless.model.Namespace;
 import software.amazon.awssdk.services.redshiftserverless.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.redshiftserverless.model.TooManyTagsException;
@@ -19,6 +21,10 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 import software.amazon.cloudformation.proxy.delay.Constant;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public abstract class BaseHandlerStd extends BaseHandler<CallbackContext> {
   protected final String NAMESPACE_STATUS_AVAILABLE = "available";
@@ -68,6 +74,14 @@ public abstract class BaseHandlerStd extends BaseHandler<CallbackContext> {
       return true;
     }
     return false;
+  }
+
+  protected Map<String, SnapshotCopyConfiguration> getSnapshotCopyConfigurations(final ProxyClient<RedshiftServerlessClient> proxyClient, ResourceModel model) {
+    ListSnapshotCopyConfigurationsResponse listResponse = proxyClient.injectCredentialsAndInvokeV2(Translator.translateToListSnapshotCopyConfigurationsRequest(model),
+            proxyClient.client()::listSnapshotCopyConfigurations);
+
+    return listResponse.snapshotCopyConfigurations().stream()
+            .collect(Collectors.toMap(SnapshotCopyConfiguration::destinationRegion, Function.identity()));
   }
 
   protected ProgressEvent<ResourceModel, CallbackContext> errorHandler(final Exception exception) {
