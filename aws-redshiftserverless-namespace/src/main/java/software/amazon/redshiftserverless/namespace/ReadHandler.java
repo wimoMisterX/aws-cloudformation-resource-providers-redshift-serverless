@@ -16,7 +16,10 @@ import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 public class ReadHandler extends BaseHandlerStd {
-    private Logger logger;
+    private final String GET_RESOURCE_POLICY_ERROR = "not authorized to perform: redshift:GetResourcePolicy";
+    private final Integer GET_RESOURCE_POLICY_ERR_STATUS_CODE = 403;
+    private final String RESOURCE_POLICY_UNSUPPORTED_ERROR = "The resource policy feature isn't supported";
+    private final Integer RESOURCE_POLICY_UNSUPPORTED_ERR_STATUS_CODE = 400;
     private boolean containsResourcePolicy = false;
 
     protected ProgressEvent<ResourceModel, CallbackContext> handleRequest(
@@ -43,7 +46,7 @@ public class ReadHandler extends BaseHandlerStd {
                     progress = proxy.initiate("AWS-RedshiftServerless-Namespace::Read", proxyClient, model, callbackContext)
                         .translateToServiceRequest(Translator::translateToReadRequest)
                         .makeServiceCall(this::getNamespace)
-                        .handleError(this::getNamespaceErrorHandler)
+                        .handleError(this::defaultErrorHandler)
                         .done(awsResponse -> {
                             callbackContext.setNamespaceArn(awsResponse.namespace().namespaceArn());
                             return ProgressEvent.progress(Translator.translateFromReadResponse(awsResponse), callbackContext);
@@ -56,8 +59,18 @@ public class ReadHandler extends BaseHandlerStd {
                         .makeServiceCall(this::getNamespaceResourcePolicy)
                         .done((_request, _response, _client, _model, _context) -> {
                             _model.setNamespaceResourcePolicy(Translator.convertStringToJson(_response.resourcePolicy().policy(), logger));
-                            return ProgressEvent.defaultSuccessHandler(_model);
+                            return ProgressEvent.progress(_model, _context);
                         });
+                })
+                .then(progress -> {
+                    return proxy.initiate("AWS-RedshiftServerless-Namespace::SnapshotCopyConfigurations::List", proxyClient, progress.getResourceModel(), callbackContext)
+                            .translateToServiceRequest(Translator::translateToListSnapshotCopyConfigurationsRequest)
+                            .makeServiceCall(this::listSnapshotCopyConfigurations)
+                            .handleError(this::defaultErrorHandler)
+                            .done((_request, _response, _client, _model, _context) -> {
+                                _model.setSnapshotCopyConfigurations(Translator.translateToSnapshotCopyConfigurations(_response.snapshotCopyConfigurations()));
+                                return ProgressEvent.defaultSuccessHandler(_model);
+                            });
                 });
     }
 
@@ -139,14 +152,6 @@ public class ReadHandler extends BaseHandlerStd {
     private ProgressEvent<ResourceModel, CallbackContext> constructResourceModelFromResponse(
             final GetNamespaceResponse getNamespaceResponse) {
         return ProgressEvent.defaultSuccessHandler(Translator.translateFromReadResponse(getNamespaceResponse));
-    }
-
-    private ProgressEvent<ResourceModel, CallbackContext> getNamespaceErrorHandler(final GetNamespaceRequest getNamespaceRequest,
-                                                                                      final Exception exception,
-                                                                                      final ProxyClient<RedshiftServerlessClient> client,
-                                                                                      final ResourceModel model,
-                                                                                      final CallbackContext context) {
-        return errorHandler(exception);
     }
 
     /**
