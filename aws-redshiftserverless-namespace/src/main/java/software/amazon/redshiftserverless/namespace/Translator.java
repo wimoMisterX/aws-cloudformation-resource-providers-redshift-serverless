@@ -92,9 +92,9 @@ public class Translator {
   }
 
   /**
-   * Request to enable Cross-region cluster Snapshot
+   * Request to list snapshot copy configurations for a namespace
    * @param model resource model
-   * @return awsRequest the aws service request to modify a resource
+   * @return awsRequest the aws service request to list the snapshot copy configurations
    */
   static ListSnapshotCopyConfigurationsRequest translateToListSnapshotCopyConfigurationsRequest(final ResourceModel model) {
     return ListSnapshotCopyConfigurationsRequest.builder()
@@ -103,9 +103,10 @@ public class Translator {
   }
 
   /**
-   * Request to enable Cross-region cluster Snapshot
+   * Request to create a snapshot copy configuration for a namespace
    * @param model resource model
-   * @return awsRequest the aws service request to modify a resource
+   * @param snapshotCopyConfiguration the snapshot copy configuration to create
+   * @return awsRequest the aws service request to create a snapshot copy configuration
    */
   static CreateSnapshotCopyConfigurationRequest translateToCreateSnapshotCopyConfigurationRequest(final ResourceModel model, final SnapshotCopyConfiguration snapshotCopyConfiguration) {
     return CreateSnapshotCopyConfigurationRequest.builder()
@@ -117,9 +118,10 @@ public class Translator {
   }
 
   /**
-   * Request to Disable Cluster Snapshot
+   * Request to update a snapshot copy configuration for a namespace
    * @param model resource model
-   * @return awsRequest the aws service request to modify a resource
+   * @param snapshotCopyConfiguration the snapshot copy configuration to update
+   * @return awsRequest the aws service request to update a snapshot copy configuration
    */
   static UpdateSnapshotCopyConfigurationRequest translateToUpdateSnapshotCopyConfigurationRequest(final ResourceModel model, final String snapshotCopyConfigurationId, final SnapshotCopyConfiguration snapshotCopyConfiguration) {
     return UpdateSnapshotCopyConfigurationRequest.builder()
@@ -129,9 +131,10 @@ public class Translator {
   }
 
   /**
-   * Request to Disable Cluster Snapshot
+   * Request to delete a snapshot copy configuration for a namespace
    * @param model resource model
-   * @return awsRequest the aws service request to modify a resource
+   * @param snapshotCopyConfigurationId the snapshot copy configuration id to delete
+   * @return awsRequest the aws service request to delete a snapshot copy configuration
    */
   static DeleteSnapshotCopyConfigurationRequest translateToDeleteSnapshotCopyConfigurationRequest(final ResourceModel model, final String snapshotCopyConfigurationId) {
     return DeleteSnapshotCopyConfigurationRequest.builder()
@@ -345,5 +348,15 @@ public class Translator {
       logger.log("Error parsing Policy String to Json");
     }
     return json;
+  }
+
+  static List<SnapshotCopyConfiguration> translateToSnapshotCopyConfigurations(List<software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration> configs) {
+    return configs.stream()
+            .map(c -> SnapshotCopyConfiguration.builder()
+                    .destinationRegion(c.destinationRegion())
+                    .destinationKmsKeyId(c.destinationKmsKeyId())
+                    .snapshotRetentionPeriod(c.snapshotRetentionPeriod())
+                    .build())
+            .collect(Collectors.toList());
   }
 }

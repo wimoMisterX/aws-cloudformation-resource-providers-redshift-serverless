@@ -10,46 +10,35 @@ import software.amazon.awssdk.services.redshift.RedshiftClient;
 import software.amazon.awssdk.services.redshift.model.*;
 import software.amazon.awssdk.services.redshift.model.UnsupportedOperationException;
 import software.amazon.awssdk.services.redshiftserverless.RedshiftServerlessClient;
-import software.amazon.awssdk.services.redshiftserverless.model.AccessDeniedException;
-import software.amazon.awssdk.services.redshiftserverless.model.ConflictException;
-import software.amazon.awssdk.services.redshiftserverless.model.CreateSnapshotCopyConfigurationRequest;
-import software.amazon.awssdk.services.redshiftserverless.model.CreateSnapshotCopyConfigurationResponse;
 import software.amazon.awssdk.services.redshiftserverless.model.DeleteSnapshotCopyConfigurationRequest;
 import software.amazon.awssdk.services.redshiftserverless.model.DeleteSnapshotCopyConfigurationResponse;
 import software.amazon.awssdk.services.redshiftserverless.model.GetNamespaceRequest;
 import software.amazon.awssdk.services.redshiftserverless.model.GetNamespaceResponse;
-import software.amazon.awssdk.services.redshiftserverless.model.InternalServerException;
+import software.amazon.awssdk.services.redshiftserverless.model.ListSnapshotCopyConfigurationsResponse;
 import software.amazon.awssdk.services.redshiftserverless.model.ResourceNotFoundException;
-import software.amazon.awssdk.services.redshiftserverless.model.ServiceQuotaExceededException;
 import software.amazon.awssdk.services.redshiftserverless.model.UpdateNamespaceRequest;
 import software.amazon.awssdk.services.redshiftserverless.model.UpdateNamespaceResponse;
 import software.amazon.awssdk.services.redshiftserverless.model.UpdateSnapshotCopyConfigurationRequest;
 import software.amazon.awssdk.services.redshiftserverless.model.UpdateSnapshotCopyConfigurationResponse;
-import software.amazon.awssdk.services.redshiftserverless.model.ValidationException;
-import software.amazon.cloudformation.exceptions.CfnAccessDeniedException;
 import software.amazon.cloudformation.exceptions.CfnGeneralServiceException;
 import software.amazon.cloudformation.exceptions.CfnInvalidRequestException;
 import software.amazon.cloudformation.exceptions.CfnNotFoundException;
-import software.amazon.cloudformation.exceptions.CfnResourceConflictException;
-import software.amazon.cloudformation.exceptions.CfnServiceInternalErrorException;
-import software.amazon.cloudformation.exceptions.CfnServiceLimitExceededException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.Logger;
-import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class UpdateHandler extends BaseHandlerStd {
-    private Logger logger;
-
     protected ProgressEvent<ResourceModel, CallbackContext> handleRequest(
         final AmazonWebServicesClientProxy proxy,
         final ResourceHandlerRequest<ResourceModel> request,
@@ -109,13 +98,13 @@ public class UpdateHandler extends BaseHandlerStd {
                                 .backoffDelay(BACKOFF_STRATEGY)
                                 .makeServiceCall(this::updateNamespace)
                                 .stabilize((_awsRequest, _awsResponse, _client, _model, _context) -> isNamespaceActive(_client, _model, _context))
-                                .handleError(this::updateNamespaceErrorHandler)
+                                .handleError(this::defaultErrorHandler)
                                 .progress())
                 .then(progress -> {
                     progress = proxy.initiate("AWS-RedshiftServerless-Namespace::ReadOnly", proxyClient, updateRequestModel, callbackContext)
                             .translateToServiceRequest(Translator::translateToReadRequest)
                             .makeServiceCall(this::getNamespace)
-                            .handleError(this::getNamespaceErrorHandler)
+                            .handleError(this::defaultErrorHandler)
                             .done(awsResponse -> {
                                 callbackContext.setNamespaceArn(awsResponse.namespace().namespaceArn());
                                 return ProgressEvent.progress(Translator.translateFromReadResponse(awsResponse), callbackContext);
@@ -142,17 +131,15 @@ public class UpdateHandler extends BaseHandlerStd {
                     return progress;
                 })
                 .then(progress -> {
-                    Map<String, SnapshotCopyConfiguration> desiredSnapshotCopyConfigurations = currentModel.getSnapshotCopyConfigurations()
+                    Map<String, SnapshotCopyConfiguration> desiredSnapshotCopyConfigurations = Optional.ofNullable(currentModel.getSnapshotCopyConfigurations())
+                            .orElse(Collections.emptyList())
                             .stream()
                             .collect(Collectors.toMap(SnapshotCopyConfiguration::getDestinationRegion, Function.identity()));
 
                     // We currently only support CRC for 1 destination region per namespace
                     if (desiredSnapshotCopyConfigurations.size() > 1) {
-                        return ProgressEvent.<ResourceModel, CallbackContext>builder()
-                            .status(OperationStatus.FAILED)
-                            .errorCode(HandlerErrorCode.InvalidRequest)
-                            .message(String.format("You can only have one snapshot copy configuration per namespace %s", currentModel.getNamespace().getNamespaceName()))
-                            .build();
+                        return ProgressEvent.failed(currentModel, callbackContext, HandlerErrorCode.InvalidRequest,
+                                String.format("You can only have one snapshot copy configuration per namespace %s", currentModel.getNamespace().getNamespaceName()));
                     }
 
                     // Determine snapshot copy configurations to delete, update & create
@@ -172,13 +159,11 @@ public class UpdateHandler extends BaseHandlerStd {
                                 software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration existing = existingSnapshotCopyConfigurations.get(destinationRegion);
 
                                 // If destination kms key has changed, then we need to delete and re-create the snapshot copy configuration
-                                if (ObjectUtils.notEqual(desired.getDestinationKmsKeyId(), existing.destinationKmsKeyId())) {
+                                if (ObjectUtils.notEqual(Optional.ofNullable(desired.getDestinationKmsKeyId()).orElse("AWS_OWNED_KMS_KEY"), existing.destinationKmsKeyId())) {
                                     configurationsToDelete.add(existing);
                                     configurationsToCreate.add(desired);
-                                }
-
                                 // If retention period has changed, then we update the snapshot copy configuration
-                                if (ObjectUtils.notEqual(desired.getSnapshotRetentionPeriod(), existing.snapshotRetentionPeriod())) {
+                                } else if (ObjectUtils.notEqual(Optional.ofNullable(desired.getSnapshotRetentionPeriod()).orElse(-1), existing.snapshotRetentionPeriod())) {
                                     configurationsToUpdate.put(existing.snapshotCopyConfigurationId(), desired);
                                 }
                             });
@@ -188,6 +173,7 @@ public class UpdateHandler extends BaseHandlerStd {
                         progress = progress.then(__ -> proxy.initiate(String.format("AWS-RedshiftServerless-Namespace::DeleteSnapshotCopyConfiguration::%s", snapshotCopyConfiguration.destinationRegion()), proxyClient, currentModel, callbackContext)
                                 .translateToServiceRequest((model) -> Translator.translateToDeleteSnapshotCopyConfigurationRequest(model, snapshotCopyConfiguration.snapshotCopyConfigurationId()))
                                 .makeServiceCall(this::deleteSnapshotCopyConfiguration)
+                                .handleError(this::deleteSnapshotCopyConfigurationErrorHandler)
                                 .progress());
                     }
 
@@ -196,6 +182,7 @@ public class UpdateHandler extends BaseHandlerStd {
                         progress = progress.then(__ -> proxy.initiate(String.format("AWS-RedshiftServerless-Namespace::UpdateSnapshotCopyConfiguration::%s", entry.getValue().getDestinationRegion()), proxyClient, currentModel, callbackContext)
                                 .translateToServiceRequest((model) -> Translator.translateToUpdateSnapshotCopyConfigurationRequest(model, entry.getKey(), entry.getValue()))
                                 .makeServiceCall(this::updateSnapshotCopyConfiguration)
+                                .handleError(this::defaultErrorHandler)
                                 .progress());
                     }
 
@@ -204,6 +191,7 @@ public class UpdateHandler extends BaseHandlerStd {
                         progress = progress.then(__ -> proxy.initiate(String.format("AWS-RedshiftServerless-Namespace::CreateSnapshotCopyConfiguration::%s", snapshotCopyConfiguration.getDestinationRegion()), proxyClient, currentModel, callbackContext)
                                 .translateToServiceRequest((model) -> Translator.translateToCreateSnapshotCopyConfigurationRequest(model, snapshotCopyConfiguration))
                                 .makeServiceCall(this::createSnapshotCopyConfiguration)
+                                .handleError(this::defaultErrorHandler)
                                 .progress());
                     }
 
@@ -271,53 +259,18 @@ public class UpdateHandler extends BaseHandlerStd {
         return deleteResponse;
     }
 
-    private CreateSnapshotCopyConfigurationResponse createSnapshotCopyConfiguration(final CreateSnapshotCopyConfigurationRequest createRequest,
-                                                                                    final ProxyClient<RedshiftServerlessClient> proxyClient) {
-        CreateSnapshotCopyConfigurationResponse createResponse = null;
 
-        try {
-            createResponse = proxyClient.injectCredentialsAndInvokeV2(createRequest, proxyClient.client()::createSnapshotCopyConfiguration);
-        } catch (final ValidationException e) {
-            throw new CfnInvalidRequestException(e);
-        } catch (final ConflictException e) {
-            throw new CfnResourceConflictException(e);
-        } catch (final AccessDeniedException e) {
-            throw new CfnAccessDeniedException(e);
-        } catch (final ServiceQuotaExceededException e) {
-            throw new CfnServiceLimitExceededException(e);
-        } catch (final ResourceNotFoundException e) {
-            throw new CfnNotFoundException(ResourceModel.TYPE_NAME, createRequest.namespaceName());
-        } catch (final InternalServerException e) {
-            throw new CfnServiceInternalErrorException(e);
-        } catch (SdkClientException e) {
-            throw new CfnGeneralServiceException(e);
-        }
+    private Map<String, software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration> getSnapshotCopyConfigurations(final ProxyClient<RedshiftServerlessClient> proxyClient, ResourceModel model) {
+        ListSnapshotCopyConfigurationsResponse listResponse = proxyClient.injectCredentialsAndInvokeV2(Translator.translateToListSnapshotCopyConfigurationsRequest(model),
+                proxyClient.client()::listSnapshotCopyConfigurations);
 
-        logger.log(String.format("Created snapshot copy configuration for %s %s in destination region %s.", ResourceModel.TYPE_NAME,
-                createResponse.snapshotCopyConfiguration().namespaceName(), createResponse.snapshotCopyConfiguration().destinationRegion()));
-        return createResponse;
+        return listResponse.snapshotCopyConfigurations().stream()
+                .collect(Collectors.toMap(software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration::destinationRegion, Function.identity()));
     }
 
     private UpdateSnapshotCopyConfigurationResponse updateSnapshotCopyConfiguration(final UpdateSnapshotCopyConfigurationRequest updateRequest,
                                                                                     final ProxyClient<RedshiftServerlessClient> proxyClient) {
-        UpdateSnapshotCopyConfigurationResponse updateResponse = null;
-
-        try {
-            updateResponse = proxyClient.injectCredentialsAndInvokeV2(updateRequest, proxyClient.client()::updateSnapshotCopyConfiguration);
-        } catch (final ValidationException e) {
-            throw new CfnInvalidRequestException(e);
-        } catch (final ConflictException e) {
-            throw new CfnResourceConflictException(e);
-        } catch (final AccessDeniedException e) {
-            throw new CfnAccessDeniedException(e);
-        } catch (final ResourceNotFoundException e) {
-            throw new CfnNotFoundException(e);
-        } catch (final InternalServerException e) {
-            throw new CfnServiceInternalErrorException(e);
-        } catch (SdkClientException e) {
-            throw new CfnGeneralServiceException(e);
-        }
-
+        UpdateSnapshotCopyConfigurationResponse updateResponse = proxyClient.injectCredentialsAndInvokeV2(updateRequest, proxyClient.client()::updateSnapshotCopyConfiguration);
         logger.log(String.format("Updated snapshot copy configuration for %s %s in destination region %s.", ResourceModel.TYPE_NAME,
                 updateResponse.snapshotCopyConfiguration().namespaceName(), updateResponse.snapshotCopyConfiguration().destinationRegion()));
         return updateResponse;
@@ -325,43 +278,21 @@ public class UpdateHandler extends BaseHandlerStd {
 
     private DeleteSnapshotCopyConfigurationResponse deleteSnapshotCopyConfiguration(final DeleteSnapshotCopyConfigurationRequest deleteRequest,
                                                                                     final ProxyClient<RedshiftServerlessClient> proxyClient) {
-        DeleteSnapshotCopyConfigurationResponse deleteResponse = null;
-
-        try {
-            deleteResponse = proxyClient.injectCredentialsAndInvokeV2(deleteRequest, proxyClient.client()::deleteSnapshotCopyConfiguration);
-        } catch (final ValidationException e) {
-            throw new CfnInvalidRequestException(e);
-        } catch (final ConflictException e) {
-            throw new CfnResourceConflictException(e);
-        } catch (final AccessDeniedException e) {
-            throw new CfnAccessDeniedException(e);
-        } catch (final ResourceNotFoundException e) {
-            logger.log(String.format("Snapshot copy configuration id %s does not exist.", deleteRequest.snapshotCopyConfigurationId()));
-            return null;
-        } catch (final InternalServerException e) {
-            throw new CfnServiceInternalErrorException(e);
-        } catch (SdkClientException e) {
-            throw new CfnGeneralServiceException(e);
-        }
-
+        DeleteSnapshotCopyConfigurationResponse deleteResponse = proxyClient.injectCredentialsAndInvokeV2(deleteRequest, proxyClient.client()::deleteSnapshotCopyConfiguration);
         logger.log(String.format("Deleted snapshot copy configuration for %s %s in destination region %s.", ResourceModel.TYPE_NAME,
                 deleteResponse.snapshotCopyConfiguration().namespaceName(), deleteResponse.snapshotCopyConfiguration().destinationRegion()));
         return deleteResponse;
     }
 
-    private ProgressEvent<ResourceModel, CallbackContext> updateNamespaceErrorHandler(final UpdateNamespaceRequest updateNamespaceRequest,
-                                                                                      final Exception exception,
-                                                                                      final ProxyClient<RedshiftServerlessClient> client,
-                                                                                      final ResourceModel model,
-                                                                                      final CallbackContext context) {
-        return errorHandler(exception);
-    }
-
-    private ProgressEvent<ResourceModel, CallbackContext> getNamespaceErrorHandler(final GetNamespaceRequest getNamespaceRequest,
-                                                                                   final Exception exception,
-                                                                                   final ProxyClient<RedshiftServerlessClient> client,
-                                                                                   final ResourceModel model,
-                                                                                   final CallbackContext context) {
+    private ProgressEvent<ResourceModel, CallbackContext> deleteSnapshotCopyConfigurationErrorHandler(final DeleteSnapshotCopyConfigurationRequest request,
+                                                                                                      final Exception exception,
+                                                                                                      final ProxyClient<RedshiftServerlessClient> client,
+                                                                                                      final ResourceModel model,
+                                                                                                      final CallbackContext context) {
+        if (exception instanceof ResourceNotFoundException) {
+            logger.log(String.format("Snapshot copy configuration id %s does not exist.", request.snapshotCopyConfigurationId()));
+            return ProgressEvent.defaultInProgressHandler(context, 0, model);
+        }
         return errorHandler(exception);
     }
 
