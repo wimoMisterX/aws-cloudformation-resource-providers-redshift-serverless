@@ -1,5 +1,6 @@
 package software.amazon.redshiftserverless.namespace;
 
+import lombok.Value;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -34,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -131,45 +133,25 @@ public class UpdateHandler extends BaseHandlerStd {
                     return progress;
                 })
                 .then(progress -> {
-                    Map<String, SnapshotCopyConfiguration> desiredSnapshotCopyConfigurations = Optional.ofNullable(currentModel.getSnapshotCopyConfigurations())
-                            .orElse(Collections.emptyList())
-                            .stream()
-                            .collect(Collectors.toMap(SnapshotCopyConfiguration::getDestinationRegion, Function.identity()));
-
                     // We currently only support CRC for 1 destination region per namespace
-                    if (desiredSnapshotCopyConfigurations.size() > 1) {
+                    if (currentModel.getSnapshotCopyConfigurations() != null && currentModel.getSnapshotCopyConfigurations().size() > 1) {
                         return ProgressEvent.failed(currentModel, callbackContext, HandlerErrorCode.InvalidRequest,
                                 String.format("You can only have one snapshot copy configuration per namespace %s", currentModel.getNamespace().getNamespaceName()));
                     }
 
-                    // Determine snapshot copy configurations to delete, update & create
-                    Map<String, software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration> existingSnapshotCopyConfigurations = getSnapshotCopyConfigurations(proxyClient, currentModel);
-                    List<SnapshotCopyConfiguration> configurationsToCreate = SetUtils.difference(desiredSnapshotCopyConfigurations.keySet(), existingSnapshotCopyConfigurations.keySet())
-                            .stream()
-                            .map(desiredSnapshotCopyConfigurations::get)
-                            .collect(Collectors.toList());
-                    List<software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration> configurationsToDelete = SetUtils.difference(existingSnapshotCopyConfigurations.keySet(), desiredSnapshotCopyConfigurations.keySet())
-                            .stream()
-                            .map(existingSnapshotCopyConfigurations::get)
-                            .collect(Collectors.toList());
-                    Map<String, SnapshotCopyConfiguration> configurationsToUpdate = new HashMap<>();
-                    SetUtils.intersection(desiredSnapshotCopyConfigurations.keySet(), existingSnapshotCopyConfigurations.keySet())
-                            .forEach(destinationRegion -> {
-                                SnapshotCopyConfiguration desired = desiredSnapshotCopyConfigurations.get(destinationRegion);
-                                software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration existing = existingSnapshotCopyConfigurations.get(destinationRegion);
-
-                                // If destination kms key has changed, then we need to delete and re-create the snapshot copy configuration
-                                if (ObjectUtils.notEqual(Optional.ofNullable(desired.getDestinationKmsKeyId()).orElse("AWS_OWNED_KMS_KEY"), existing.destinationKmsKeyId())) {
-                                    configurationsToDelete.add(existing);
-                                    configurationsToCreate.add(desired);
-                                // If retention period has changed, then we update the snapshot copy configuration
-                                } else if (ObjectUtils.notEqual(Optional.ofNullable(desired.getSnapshotRetentionPeriod()).orElse(-1), existing.snapshotRetentionPeriod())) {
-                                    configurationsToUpdate.put(existing.snapshotCopyConfigurationId(), desired);
-                                }
-                            });
+                    SnapshotCopyConfigurationDiff diff = getSnapshotCopyConfigurationDiff(
+                            Optional.ofNullable(currentModel.getSnapshotCopyConfigurations())
+                                    .orElse(Collections.emptyList())
+                                    .stream()
+                                    .collect(Collectors.toMap(SnapshotCopyConfiguration::getDestinationRegion, Function.identity())),
+                            Optional.ofNullable(request.getPreviousResourceState().getSnapshotCopyConfigurations())
+                                    .orElse(Collections.emptyList())
+                                    .stream()
+                                    .collect(Collectors.toMap(SnapshotCopyConfiguration::getDestinationRegion, Function.identity())),
+                            getSnapshotCopyConfigurations(proxyClient, currentModel));
 
                     // 1. Delete snapshot copy configurations
-                    for (software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration snapshotCopyConfiguration : configurationsToDelete) {
+                    for (software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration snapshotCopyConfiguration : diff.getToDelete()) {
                         progress = progress.then(__ -> proxy.initiate(String.format("AWS-RedshiftServerless-Namespace::DeleteSnapshotCopyConfiguration::%s", snapshotCopyConfiguration.destinationRegion()), proxyClient, currentModel, callbackContext)
                                 .translateToServiceRequest((model) -> Translator.translateToDeleteSnapshotCopyConfigurationRequest(model, snapshotCopyConfiguration.snapshotCopyConfigurationId()))
                                 .makeServiceCall(this::deleteSnapshotCopyConfiguration)
@@ -178,7 +160,7 @@ public class UpdateHandler extends BaseHandlerStd {
                     }
 
                     // 2. Update snapshot copy configurations
-                    for (Map.Entry<String, SnapshotCopyConfiguration> entry : configurationsToUpdate.entrySet()) {
+                    for (Map.Entry<String, SnapshotCopyConfiguration> entry : diff.getToUpdate().entrySet()) {
                         progress = progress.then(__ -> proxy.initiate(String.format("AWS-RedshiftServerless-Namespace::UpdateSnapshotCopyConfiguration::%s", entry.getValue().getDestinationRegion()), proxyClient, currentModel, callbackContext)
                                 .translateToServiceRequest((model) -> Translator.translateToUpdateSnapshotCopyConfigurationRequest(model, entry.getKey(), entry.getValue()))
                                 .makeServiceCall(this::updateSnapshotCopyConfiguration)
@@ -187,7 +169,7 @@ public class UpdateHandler extends BaseHandlerStd {
                     }
 
                     // 3. Create snapshot copy configurations
-                    for (SnapshotCopyConfiguration snapshotCopyConfiguration : configurationsToCreate) {
+                    for (SnapshotCopyConfiguration snapshotCopyConfiguration : diff.getToCreate()) {
                         progress = progress.then(__ -> proxy.initiate(String.format("AWS-RedshiftServerless-Namespace::CreateSnapshotCopyConfiguration::%s", snapshotCopyConfiguration.getDestinationRegion()), proxyClient, currentModel, callbackContext)
                                 .translateToServiceRequest((model) -> Translator.translateToCreateSnapshotCopyConfigurationRequest(model, snapshotCopyConfiguration))
                                 .makeServiceCall(this::createSnapshotCopyConfiguration)
@@ -294,6 +276,63 @@ public class UpdateHandler extends BaseHandlerStd {
             return ProgressEvent.defaultInProgressHandler(context, 0, model);
         }
         return errorHandler(exception);
+    }
+
+    /**
+     * Determine snapshot copy configurations to delete, update & create
+     * We only determine the diffs with the previous model state, this ensures that snapshot copy configurations defined in CFN to only be managed.
+     * Therefore, if snapshot copy configurations are created manually but not specified in CFN, these will not be touched by CFN!
+     */
+    private SnapshotCopyConfigurationDiff getSnapshotCopyConfigurationDiff(final Map<String, SnapshotCopyConfiguration> desiredSnapshotCopyConfigurations,
+                                                                           final Map<String, SnapshotCopyConfiguration> previousSnapshotCopyConfigurations,
+                                                                           final Map<String, software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration> existingSnapshotCopyConfigurations) {
+        // Include snapshot copy configurations found through the API which are not in the previous model state
+        SetUtils.intersection(desiredSnapshotCopyConfigurations.keySet(), existingSnapshotCopyConfigurations.keySet())
+                .stream()
+                .filter(destinationRegion -> !previousSnapshotCopyConfigurations.containsKey(destinationRegion))
+                .forEach(destinationRegion -> {
+                    software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration existing = existingSnapshotCopyConfigurations.get(destinationRegion);
+                    previousSnapshotCopyConfigurations.put(destinationRegion, Translator.translateToSnapshotCopyConfiguration(existing));
+                });
+
+        List<SnapshotCopyConfiguration> configurationsToCreate = SetUtils.difference(desiredSnapshotCopyConfigurations.keySet(), previousSnapshotCopyConfigurations.keySet())
+                .stream()
+                .map(desiredSnapshotCopyConfigurations::get)
+                .collect(Collectors.toList());
+
+        List<software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration> configurationsToDelete = SetUtils.difference(previousSnapshotCopyConfigurations.keySet(), desiredSnapshotCopyConfigurations.keySet())
+                .stream()
+                .map(existingSnapshotCopyConfigurations::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        Map<String, SnapshotCopyConfiguration> configurationsToUpdate = new HashMap<>();
+        SetUtils.intersection(desiredSnapshotCopyConfigurations.keySet(), previousSnapshotCopyConfigurations.keySet())
+                .forEach(destinationRegion -> {
+                    SnapshotCopyConfiguration desired = desiredSnapshotCopyConfigurations.get(destinationRegion);
+                    software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration existing = existingSnapshotCopyConfigurations.get(destinationRegion);
+
+                    // If an existing configuration doesn't exist (manually deleted), lets re-create it!
+                    if (existing == null) {
+                        configurationsToCreate.add(desired);
+                    // If destination kms key has changed, then we need to delete and re-create the snapshot copy configuration
+                    } else if (ObjectUtils.notEqual(Optional.ofNullable(desired.getDestinationKmsKeyId()).orElse("AWS_OWNED_KMS_KEY"), existing.destinationKmsKeyId())) {
+                        configurationsToDelete.add(existing);
+                        configurationsToCreate.add(desired);
+                    // If retention period has changed, then we update the snapshot copy configuration
+                    } else if (ObjectUtils.notEqual(Optional.ofNullable(desired.getSnapshotRetentionPeriod()).orElse(-1), existing.snapshotRetentionPeriod())) {
+                        configurationsToUpdate.put(existing.snapshotCopyConfigurationId(), desired);
+                    }
+                });
+
+        return new SnapshotCopyConfigurationDiff(configurationsToCreate, configurationsToDelete, configurationsToUpdate);
+    }
+
+    @Value
+    private static class SnapshotCopyConfigurationDiff {
+        List<SnapshotCopyConfiguration> toCreate;
+        List<software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration> toDelete;
+        Map<String, SnapshotCopyConfiguration> toUpdate;
     }
 
     private boolean compareListParamsEqualOrNot(List<String> prevParam, List<String> currParam) {

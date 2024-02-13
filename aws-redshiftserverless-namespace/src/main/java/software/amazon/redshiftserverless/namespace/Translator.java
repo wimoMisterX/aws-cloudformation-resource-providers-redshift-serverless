@@ -350,13 +350,17 @@ public class Translator {
     return json;
   }
 
+  static SnapshotCopyConfiguration translateToSnapshotCopyConfiguration(software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration config) {
+    return SnapshotCopyConfiguration.builder()
+            .destinationRegion(config.destinationRegion())
+            .destinationKmsKeyId(config.destinationKmsKeyId())
+            .snapshotRetentionPeriod(config.snapshotRetentionPeriod())
+            .build();
+  }
+
   static List<SnapshotCopyConfiguration> translateToSnapshotCopyConfigurations(List<software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration> configs) {
     return configs.stream()
-            .map(c -> SnapshotCopyConfiguration.builder()
-                    .destinationRegion(c.destinationRegion())
-                    .destinationKmsKeyId(c.destinationKmsKeyId())
-                    .snapshotRetentionPeriod(c.snapshotRetentionPeriod())
-                    .build())
+            .map(Translator::translateToSnapshotCopyConfiguration)
             .collect(Collectors.toList());
   }
 }
