@@ -7,6 +7,8 @@ import software.amazon.awssdk.services.redshift.model.UnsupportedOperationExcept
 import software.amazon.awssdk.services.redshiftserverless.model.GetNamespaceRequest;
 import software.amazon.awssdk.services.redshiftserverless.model.GetNamespaceResponse;
 import software.amazon.awssdk.services.redshiftserverless.RedshiftServerlessClient;
+import software.amazon.awssdk.services.redshiftserverless.model.ListSnapshotCopyConfigurationsRequest;
+import software.amazon.awssdk.services.redshiftserverless.model.ValidationException;
 import software.amazon.cloudformation.exceptions.CfnGeneralServiceException;
 import software.amazon.cloudformation.exceptions.CfnInvalidRequestException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
@@ -17,6 +19,7 @@ import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 public class ReadHandler extends BaseHandlerStd {
     private boolean containsResourcePolicy = false;
+    private boolean containsSnapshotCopyConfigurations = false;
 
     protected ProgressEvent<ResourceModel, CallbackContext> handleRequest(
         final AmazonWebServicesClientProxy proxy,
@@ -36,6 +39,7 @@ public class ReadHandler extends BaseHandlerStd {
         in Read handler should be suppressed or not.
          */
         containsResourcePolicy = model.getNamespaceResourcePolicy() != null;
+        containsSnapshotCopyConfigurations = model.getSnapshotCopyConfigurations() != null;
 
         return ProgressEvent.progress(model, callbackContext)
                 .then(progress -> {
@@ -62,7 +66,7 @@ public class ReadHandler extends BaseHandlerStd {
                     return proxy.initiate("AWS-RedshiftServerless-Namespace::SnapshotCopyConfigurations::List", proxyClient, progress.getResourceModel(), callbackContext)
                             .translateToServiceRequest(Translator::translateToListSnapshotCopyConfigurationsRequest)
                             .makeServiceCall(this::listSnapshotCopyConfigurations)
-                            .handleError(this::defaultErrorHandler)
+                            .handleError(this::listSnapshotCopyConfigurationErrorHandler)
                             .done((_request, _response, _client, _model, _context) -> {
                                 _model.setSnapshotCopyConfigurations(Translator.translateToSnapshotCopyConfigurations(_response.snapshotCopyConfigurations()));
                                 return ProgressEvent.defaultSuccessHandler(_model);
@@ -143,6 +147,26 @@ public class ReadHandler extends BaseHandlerStd {
         }
         logger.log(String.format("%s  resource policy has successfully been read.", ResourceModel.TYPE_NAME));
         return getResponse;
+    }
+
+    private ProgressEvent<ResourceModel, CallbackContext> listSnapshotCopyConfigurationErrorHandler(final ListSnapshotCopyConfigurationsRequest request,
+                                                                                                    final Exception exception,
+                                                                                                    final ProxyClient<RedshiftServerlessClient> client,
+                                                                                                    final ResourceModel model,
+                                                                                                    final CallbackContext context) {
+        if (exception instanceof ValidationException) {
+            // ValidationException is thrown when the feature is not enabled in a region
+            logger.log(String.format("CRC feature is not enabled for this region: %s", exception.getMessage()));
+            return ProgressEvent.defaultSuccessHandler(model);
+        } else if (!containsSnapshotCopyConfigurations) {
+            // This error handling is required for backward compatibility. Without this exception handling,
+            // existing customers creating or updating their namespace will see an error with permission issues
+            logger.log(String.format("Template does not have snapshot copy configurations, RedshiftServerlessException: %s", exception.getMessage()));
+            return ProgressEvent.defaultSuccessHandler(model);
+        }
+
+        // Otherwise perform the standard error handling
+        return errorHandler(exception);
     }
 
     private ProgressEvent<ResourceModel, CallbackContext> constructResourceModelFromResponse(
