@@ -19,8 +19,12 @@ import software.amazon.cloudformation.exceptions.CfnGeneralServiceException;
 import software.amazon.cloudformation.exceptions.CfnInvalidRequestException;
 import software.amazon.awssdk.services.redshiftserverless.model.ListSnapshotCopyConfigurationsRequest;
 import software.amazon.awssdk.services.redshiftserverless.model.ListSnapshotCopyConfigurationsResponse;
+import software.amazon.awssdk.services.redshiftserverless.model.RedshiftServerlessException;
+import software.amazon.awssdk.services.redshiftserverless.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration;
+import software.amazon.awssdk.services.redshiftserverless.model.ValidationException;
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
+import software.amazon.cloudformation.proxy.HandlerErrorCode;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
 import software.amazon.cloudformation.proxy.ProxyClient;
@@ -232,5 +236,58 @@ public class ReadHandlerTest extends AbstractTestBase {
         assertThat(response.getResourceModels()).isNull();
         assertThat(response.getMessage()).isNull();
         assertThat(response.getErrorCode()).isNull();
+    }
+
+    static Stream<Arguments> provideListSnapshotCopyConfigurationsExceptionParams() {
+        return Stream.of(
+                Arguments.of(ValidationException.class, false, null),
+                Arguments.of(ResourceNotFoundException.class, false, null),
+                Arguments.of(ResourceNotFoundException.class, true, HandlerErrorCode.NotFound),
+                Arguments.of(RedshiftServerlessException.class, true, HandlerErrorCode.GeneralServiceException)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideListSnapshotCopyConfigurationsExceptionParams")
+    public void catchListSnapshotCopyConfigurationsExceptionAsExpected(
+            Class<Exception> exceptionClass,
+            boolean containsSnapshotCopyConfigurations,
+            HandlerErrorCode expectedErrorCode
+    ) throws Exception {
+        final ReadHandler handler = new ReadHandler();
+
+        ResourceModel requestResourceModel = getNamespaceRequestResourceModel();
+        if (containsSnapshotCopyConfigurations) {
+            requestResourceModel.setSnapshotCopyConfigurations(Collections.singletonList(
+                    software.amazon.redshiftserverless.namespace.SnapshotCopyConfiguration.builder()
+                            .destinationRegion("us-west-2")
+                            .build()));
+        }
+        final ResourceModel responseResourceModel = getNamespaceResponseResourceModel().toBuilder()
+                .snapshotCopyConfigurations(null)
+                .build();
+
+        final ResourceHandlerRequest<ResourceModel> request = ResourceHandlerRequest.<ResourceModel>builder()
+                .desiredResourceState(requestResourceModel)
+                .build();
+
+        when(proxyClient.client().listSnapshotCopyConfigurations(any(ListSnapshotCopyConfigurationsRequest.class)))
+                .thenThrow((Throwable) createExceptionWithBuilder(exceptionClass));
+        when(proxyClient.client().getNamespace(any(GetNamespaceRequest.class))).thenReturn(getNamespaceResponseSdk());
+        when(redshiftProxyClient.client().getResourcePolicy(any(GetResourcePolicyRequest.class))).thenReturn(getEmptyResourcePolicyResponseSdk());
+
+        final ProgressEvent<ResourceModel, CallbackContext> response = handler.handleRequest(proxy, request, new CallbackContext(), proxyClient, redshiftProxyClient, logger);
+        assertThat(response).isNotNull();
+        if (expectedErrorCode == null) {
+            assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
+            assertThat(response.getCallbackDelaySeconds()).isEqualTo(0);
+            assertThat(response.getResourceModel()).isEqualTo(responseResourceModel);
+            assertThat(response.getResourceModels()).isNull();
+            assertThat(response.getMessage()).isNull();
+            assertThat(response.getErrorCode()).isNull();
+        } else {
+            assertThat(response.getStatus()).isEqualTo(OperationStatus.FAILED);
+            assertThat(response.getErrorCode()).isEqualTo(expectedErrorCode);
+        }
     }
 }
