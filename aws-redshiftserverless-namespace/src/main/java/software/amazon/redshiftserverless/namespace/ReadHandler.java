@@ -16,6 +16,8 @@ import software.amazon.cloudformation.proxy.ProxyClient;
 import software.amazon.cloudformation.proxy.ResourceHandlerRequest;
 
 public class ReadHandler extends BaseHandlerStd {
+    private Logger logger;
+    private boolean containsResourcePolicy = false;
 
     protected ProgressEvent<ResourceModel, CallbackContext> handleRequest(
         final AmazonWebServicesClientProxy proxy,

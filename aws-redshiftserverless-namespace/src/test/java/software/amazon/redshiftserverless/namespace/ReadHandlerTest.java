@@ -1,14 +1,8 @@
 package software.amazon.redshiftserverless.namespace;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.Duration;
-<<<<<<< HEAD
-import java.util.Collections;
 import java.util.stream.Stream;
-=======
->>>>>>> parent of 27dfc76 (Added cross region snapshot copy parameters support (#42))
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -20,14 +14,8 @@ import software.amazon.awssdk.services.redshift.model.RedshiftException;
 import software.amazon.awssdk.services.redshift.model.UnsupportedOperationException;
 import software.amazon.awssdk.services.redshiftserverless.RedshiftServerlessClient;
 import software.amazon.awssdk.services.redshiftserverless.model.GetNamespaceRequest;
-<<<<<<< HEAD
-import software.amazon.awssdk.services.redshiftserverless.model.ListSnapshotCopyConfigurationsRequest;
-import software.amazon.awssdk.services.redshiftserverless.model.ListSnapshotCopyConfigurationsResponse;
-import software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration;
 import software.amazon.cloudformation.exceptions.CfnGeneralServiceException;
 import software.amazon.cloudformation.exceptions.CfnInvalidRequestException;
-=======
->>>>>>> parent of 27dfc76 (Added cross region snapshot copy parameters support (#42))
 import software.amazon.cloudformation.proxy.AmazonWebServicesClientProxy;
 import software.amazon.cloudformation.proxy.OperationStatus;
 import software.amazon.cloudformation.proxy.ProgressEvent;
@@ -154,7 +142,6 @@ public class ReadHandlerTest extends AbstractTestBase {
                 .thenThrow((Throwable) createExceptionWithBuilder(exceptionClass));
 
         if (expectedException == null) {
-            when(proxyClient.client().listSnapshotCopyConfigurations(any(ListSnapshotCopyConfigurationsRequest.class))).thenReturn(getSnapshotCopyConfigurationsResponseSdk());
             final ProgressEvent<ResourceModel, CallbackContext> response = handler.handleRequest(proxy, request, new CallbackContext(), proxyClient, redshiftProxyClient, logger);
             assertThat(response).isNotNull();
             assertThat(response.getStatus()).isEqualTo(OperationStatus.SUCCESS);
