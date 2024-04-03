@@ -21,6 +21,7 @@ import software.amazon.awssdk.services.redshiftserverless.model.UpdateNamespaceR
 import software.amazon.awssdk.services.redshiftserverless.model.UpdateNamespaceResponse;
 import software.amazon.awssdk.services.redshiftserverless.model.UpdateSnapshotCopyConfigurationRequest;
 import software.amazon.awssdk.services.redshiftserverless.model.UpdateSnapshotCopyConfigurationResponse;
+import software.amazon.awssdk.services.redshiftserverless.model.ValidationException;
 import software.amazon.cloudformation.exceptions.CfnGeneralServiceException;
 import software.amazon.cloudformation.exceptions.CfnInvalidRequestException;
 import software.amazon.cloudformation.exceptions.CfnNotFoundException;
@@ -241,13 +242,19 @@ public class UpdateHandler extends BaseHandlerStd {
         return deleteResponse;
     }
 
-
     private Map<String, software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration> getSnapshotCopyConfigurations(final ProxyClient<RedshiftServerlessClient> proxyClient, ResourceModel model) {
-        ListSnapshotCopyConfigurationsResponse listResponse = proxyClient.injectCredentialsAndInvokeV2(Translator.translateToListSnapshotCopyConfigurationsRequest(model),
-                proxyClient.client()::listSnapshotCopyConfigurations);
-
-        return listResponse.snapshotCopyConfigurations().stream()
-                .collect(Collectors.toMap(software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration::destinationRegion, Function.identity()));
+        try {
+            ListSnapshotCopyConfigurationsResponse listResponse = proxyClient.injectCredentialsAndInvokeV2(Translator.translateToListSnapshotCopyConfigurationsRequest(model),
+                    proxyClient.client()::listSnapshotCopyConfigurations);
+            return listResponse.snapshotCopyConfigurations().stream()
+                    .collect(Collectors.toMap(software.amazon.awssdk.services.redshiftserverless.model.SnapshotCopyConfiguration::destinationRegion, Function.identity()));
+        } catch (Exception ex) {
+            if (ex instanceof ValidationException) {
+                logger.log(String.format("CRC feature is not enabled for this region: %s", ex.getMessage()));
+                return Collections.emptyMap();
+            }
+            throw ex;
+        }
     }
 
     private UpdateSnapshotCopyConfigurationResponse updateSnapshotCopyConfiguration(final UpdateSnapshotCopyConfigurationRequest updateRequest,
